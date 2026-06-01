@@ -1,0 +1,46 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: training-planner-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: training_planner
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./backend
+    container_name: training-planner-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # MongoDB connection string consumed by Spring (spring.data.mongodb.uri).
+      # Override from the host or an .env file; defaults to the bundled mongodb service.
+      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/training_planner}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-training-planner-access-secret-key-must-be-at-least-256-bits-long-for-hs256}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: training-planner-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:

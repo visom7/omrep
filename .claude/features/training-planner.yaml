@@ -1,0 +1,571 @@
+feature:
+  id: training-planner
+  title: "Training Planner — Full-Stack PWA"
+  description: >
+    A mobile-first PWA for planning and tracking powerlifting training.
+    Backend: Spring Boot 4.0 / Java 25 / MongoDB. Frontend: React + Vite + TypeScript.
+    Users organize training into blocks → weeks → days → exercise entries → set groups.
+    They plan prescribed work, log actual sets, and view 1RM progress + volume charts.
+    See REQUIREMENTS.md for the full spec (§3 global conventions are NON-NEGOTIABLE).
+  created_at: "2026-06-01"
+
+tasks:
+  - id: m0-scaffold
+    title: "Create monorepo scaffold with Spring Boot 4 backend and React/Vite/TS frontend"
+    description: >
+      Set up the monorepo at C:\Users\visom\dev\omrep with two sub-projects:
+
+      backend/ — Spring Boot 4.0.x + Java 25 Gradle project:
+        - Use `org.springframework.boot` plugin, latest 4.0.x patch (verify at start.spring.io or Maven Central).
+        - Dependencies: spring-boot-starter-web, spring-boot-starter-data-mongodb,
+          spring-boot-starter-security, spring-boot-starter-validation.
+        - `spring.application.name=training-planner`, MongoDB URI pointing to localhost:27017/training_planner.
+        - A `/api/health` GET endpoint returning `{"status":"UP"}` (no auth required).
+        - Application must start with `./gradlew bootRun` (or `gradlew.bat bootRun` on Windows).
+        - Java 25 toolchain configured in build.gradle.
+        - Enable virtual threads: `spring.threads.virtual.enabled=true`.
+
+      frontend/ — Vite + React + TypeScript PWA:
+        - Scaffold with `npm create vite@latest frontend -- --template react-ts`.
+        - Add dependencies: react-router-dom, @tanstack/react-query, react-hook-form,
+          recharts, react-i18next, i18next, vite-plugin-pwa.
+        - Configure vite-plugin-pwa with a minimal manifest (name: "Training Planner",
+          short_name: "TrainingPlanner", display: "standalone", theme_color: "#1a1a1a").
+        - Configure a dev proxy in vite.config.ts: `/api` → `http://localhost:8080`.
+        - Create `src/locales/es.json` with the seed keys from §11 of REQUIREMENTS.md.
+        - A minimal App.tsx that calls `/api/health` and displays the status.
+        - `npm run dev` must serve on port 5173 without errors.
+
+      docker-compose.yml at root — single MongoDB service:
+        - Image: mongo:7, port 27017:27017, named volume for data persistence.
+
+      README.md with run steps:
+        1. `docker-compose up -d`
+        2. `cd backend && ./gradlew bootRun`
+        3. `cd frontend && npm install && npm run dev`
+
+      CONVENTIONS (§3 of REQUIREMENTS.md — NON-NEGOTIABLE):
+      - All identifiers (classes, fields, API paths, JSON keys, variables) in English.
+      - UI copy only in Spanish via es.json — no hardcoded Spanish strings in components.
+      - Mobile-first: 390px viewport first.
+
+      TESTS: Write at least one Spring Boot integration test that calls `/api/health`
+      and asserts HTTP 200. Use `@SpringBootTest(webEnvironment=RANDOM_PORT)` with
+      MockMvc or TestRestTemplate. Tests must pass with `./gradlew test`.
+    depends_on: []
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: m1-auth
+    title: "Implement JWT authentication — register, login, refresh, and user settings"
+    description: >
+      Implement stateless JWT auth in the Spring Boot backend. All subsequent modules
+      depend on the userId being resolved from the JWT — this is the security foundation.
+
+      DATA MODEL (§4.1):
+        Collection `users`:
+          - id: ObjectId
+          - email: String (unique index)
+          - passwordHash: String (BCrypt)
+          - displayName: String
+          - preferredOneRmFormula: enum { EPLEY, BRZYCKI, LOMBARDI } default EPLEY
+          - createdAt: Instant
+
+      ENDPOINTS (no auth required on auth endpoints):
+        POST /api/auth/register
+          Body: { email, password, displayName }
+          Returns: 201 + { accessToken, refreshToken }
+          Validation: email format, password min 8 chars (Bean Validation)
+        POST /api/auth/login
+          Body: { email, password }
+          Returns: 200 + { accessToken, refreshToken }
+        POST /api/auth/refresh
+          Body: { refreshToken }
+          Returns: 200 + { accessToken, refreshToken }
+        GET /api/users/me  (JWT required)
+          Returns: { id, email, displayName, preferredOneRmFormula }
+        PUT /api/users/me  (JWT required)
+          Body: { displayName, preferredOneRmFormula }
+          Returns: updated user
+
+      JWT IMPLEMENTATION:
+        - Access token: short-lived (15 min), signed with HMAC-SHA256.
+        - Refresh token: long-lived (30 days), stored as a BCrypt hash in user document
+          (field: refreshTokenHash). On refresh, validate then rotate both tokens.
+        - Spring Security filter extracts userId (subject = user id string) from Bearer token.
+        - All /api/** routes except /api/auth/** and /api/health require valid JWT.
+        - On invalid/expired token: 401. On wrong-owner resource: 403/404 (see §3).
+
+      SECURITY RULE (§3.3): Every query/mutation is scoped to the userId from the JWT.
+      The client-supplied id is NEVER trusted for ownership.
+
+      FRONTEND (minimal, will be extended in M8):
+        - Two pages: /login and /register using react-hook-form.
+        - Store accessToken in memory (not localStorage); refreshToken in httpOnly cookie
+          OR localStorage for MVP (document the choice).
+        - Axios/fetch interceptor to attach Bearer header.
+        - i18n keys: auth.login, auth.register, auth.email, auth.password from es.json.
+        - /settings page with a form to update preferredOneRmFormula (i18n key: settings.formula).
+
+      TESTS (backend):
+        - Unit tests: UserService (register, login, refresh token rotation).
+        - Integration test: full auth flow — register → login → call protected endpoint → refresh → call again.
+        - Test that a token from user A cannot access resources claimed by user B (ownership isolation).
+        - Tests must pass with `./gradlew test`.
+
+      CONVENTIONS (§3): English identifiers everywhere; no hardcoded Spanish UI strings.
+    depends_on: [m0-scaffold]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: m5-one-rm
+    title: "Implement 1RM estimation utility (Epley, Brzycki, Lombardi) with unit tests"
+    description: >
+      Pure backend utility class for computing estimated 1RM. This is intentionally
+      isolated from persistence and can be implemented in parallel with M1.
+
+      SPECIFICATION (§5 of REQUIREMENTS.md):
+        Compute estimatedOneRmKg from weightKg and reps using three formulas:
+        - Epley (default): 1RM = w * (1 + reps / 30)
+        - Brzycki:         1RM = w * 36 / (37 - reps)
+        - Lombardi:        1RM = w * reps^0.10
+
+        Edge cases:
+        - reps == 1: 1RM = w (regardless of formula, since it IS 1RM)
+        - Brzycki guard: if reps >= 37, throw IllegalArgumentException or return w (document choice)
+        - Only compute for WORKING sets; WARMUP sets return null/0 (the caller decides, but
+          the utility itself just needs formula correctness)
+        - Round result to 2 decimal places
+
+      IMPLEMENTATION:
+        Create `backend/src/main/java/com/trainingplanner/domain/OneRmCalculator.java`
+        (or similar package path matching the project's package structure).
+        Implement as a pure utility — no Spring beans, no database access.
+        The enum `OneRmFormula { EPLEY, BRZYCKI, LOMBARDI }` lives here or in a shared types file.
+
+        Method signature (example):
+          public static double calculate(double weightKg, int reps, OneRmFormula formula)
+
+      TESTS (mandatory — §5 acceptance criteria):
+        `backend/src/test/java/.../OneRmCalculatorTest.java`
+        Cover:
+        1. Epley formula — happy path (e.g., 100kg x 5 reps → 1RM = 116.67)
+        2. Brzycki formula — happy path (e.g., 100kg x 5 reps)
+        3. Lombardi formula — happy path (e.g., 100kg x 5 reps)
+        4. reps == 1 for all three formulas → result equals weightKg
+        5. Brzycki with reps >= 37 → guard triggered (exception or fallback — be consistent)
+        6. Edge: reps == 0 → handle gracefully (return weightKg or throw — document)
+        Tests must pass with `./gradlew test`.
+
+      CONVENTIONS (§3): English class/method names; the enum values EPLEY, BRZYCKI, LOMBARDI
+      match the data model exactly.
+    depends_on: [m0-scaffold]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: m2-catalog
+    title: "Implement exercise catalog — global seeds, custom exercises, and frontend picker"
+    description: >
+      Implement the exercise catalog with global seed data and per-user custom exercises.
+
+      DATA MODEL (§4.2):
+        Collection `exercises`:
+          - id: ObjectId
+          - ownerId: ObjectId | null (null = global seed; non-null = user-owned custom)
+          - name: String (user-authored content, may be in Spanish)
+          - movementPattern: enum { SQUAT, DEADLIFT, BENCH, PRESS, ROW, ACCESSORY, OTHER }
+          - isBasic: boolean (counts toward total-of-basics 1RM sum)
+
+        SEED DATA (global, ownerId=null):
+          1. "Conventional Deadlift" — DEADLIFT, isBasic=true
+          2. "Sumo Deadlift" — DEADLIFT, isBasic=true
+          3. "High-Bar Squat" — SQUAT, isBasic=true
+          4. "Low-Bar Squat" — SQUAT, isBasic=true
+          5. "Bench Press" — BENCH, isBasic=true
+        Seed these via an ApplicationRunner or @PostConstruct that is idempotent
+        (check if already seeded before inserting).
+
+      ENDPOINTS (JWT required — §3.3):
+        GET /api/exercises
+          Returns: combined list of global seeds + caller's own custom exercises.
+          Each exercise in the response includes: id, name, movementPattern, isBasic, isCustom (boolean).
+          NEVER returns other users' custom exercises.
+        POST /api/exercises
+          Body: { name, movementPattern, isBasic }
+          Creates a custom exercise with ownerId = userId from JWT.
+          Returns: 201 + created exercise.
+          Validation: name not blank, movementPattern valid enum value.
+        DELETE /api/exercises/{id}
+          Only allowed if ownerId == userId from JWT; global seeds cannot be deleted.
+          Returns 403 if not owner, 404 if not found, 204 on success.
+
+      FRONTEND:
+        - ExercisePicker component: a searchable list/dropdown that shows all exercises
+          (from GET /api/exercises). Used in block planning (M3) and gym session (M4).
+        - ExercisesPage: lists current exercises, button to add custom, delete own custom.
+        - i18n: use keys from es.json; add any new keys needed (in English key, Spanish value).
+
+      TESTS (backend):
+        - Unit: ExerciseService — test that GET returns global + own, not other user's custom.
+        - Integration: seed idempotency (run seed twice, count stays the same).
+        - Integration: create custom for user A; user B's GET does not include it.
+        - Tests with `./gradlew test`.
+
+      CONVENTIONS (§3): ownerId field in English; exercise names are user content (may be Spanish).
+      The `isBasic` flag must match the seed data exactly (used by M6 progress chart).
+    depends_on: [m1-auth]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: m8-pwa-shell
+    title: "Implement PWA shell — manifest, service worker, offline cache, i18n, global layout, design tokens"
+    description: >
+      Implement the installable PWA shell and the global UI foundation. This runs in parallel
+      with M2. It depends on M1 (auth routing) but not M2/M3/M4.
+
+      PWA:
+        - vite-plugin-pwa configured with workbox strategy (at minimum, cache the app shell
+          and static assets; API calls use network-first).
+        - Web app manifest: name "Training Planner", short_name "Entrenamiento",
+          display "standalone", theme_color "#1a1a1a", background_color "#0f0f0f",
+          icons at 192x192 and 512x512 (can be SVG-based placeholders).
+        - Service worker registered in main.tsx.
+        - Offline: the app shell (HTML, JS, CSS) loads from cache; API failures show a
+          "Sin conexión" toast/message (i18n key: app.offline).
+
+      i18n:
+        - react-i18next initialized in main.tsx with `es` as the only locale.
+        - `src/locales/es.json` contains ALL user-facing strings — the seed from §11 of
+          REQUIREMENTS.md plus any additional keys needed. NO hardcoded Spanish strings
+          anywhere in components (§3.2 is NON-NEGOTIABLE).
+        - Pattern: `const { t } = useTranslation(); <span>{t('nav.blocks')}</span>`
+
+      GLOBAL LAYOUT & NAVIGATION:
+        - Bottom navigation bar (mobile-first) with three tabs:
+          - Bloques (nav.blocks) → /blocks
+          - Progreso (nav.progress) → /progress
+          - Ajustes (nav.settings) → /settings
+        - Top bar: app title "Training Planner" (or logo placeholder), no back button on root pages.
+        - React Router routes:
+          /login, /register (public)
+          /blocks, /progress, /settings (protected — redirect to /login if not authenticated)
+          / → redirect to /blocks if authenticated, /login if not
+
+      DESIGN TOKENS (§9 of REQUIREMENTS.md — industrial/utilitarian aesthetic):
+        Create `src/styles/tokens.css` with CSS variables:
+          --color-bg: #0f0f0f          (near-black background)
+          --color-surface: #1a1a1a     (card/panel background)
+          --color-border: #2a2a2a      (subtle dividers)
+          --color-accent: #e8ff00      (high-contrast yellow — gym logbook feel)
+          --color-text: #f0f0f0        (primary text)
+          --color-text-muted: #888888  (secondary text)
+          --color-danger: #ff4444      (destructive actions)
+          --font-mono: 'JetBrains Mono', 'Courier New', monospace  (numbers/weights)
+          --font-sans: 'Inter', system-ui, sans-serif              (UI text)
+          --radius-sm: 4px
+          --radius-md: 8px
+          --space-xs: 4px
+          --space-sm: 8px
+          --space-md: 16px
+          --space-lg: 24px
+          --space-xl: 32px
+          --tap-target: 44px           (minimum tap target height per HIG)
+        Import tokens.css in main.tsx. Components use var(--color-accent) etc. — NEVER hardcoded hex.
+
+      DO NOT:
+        - Use purple/blue gradients, generic AI aesthetics (§9).
+        - Hardcode Spanish strings (§3.2).
+        - Use default system font as the deliberate choice — load Inter + JetBrains Mono from
+          Google Fonts or bundle them.
+
+      TESTS:
+        - Verify the manifest.json is generated (check vite.config.ts PWA config).
+        - Render test for the bottom nav: all three tabs render with correct i18n text.
+        - Route guard test: unauthenticated user is redirected from /blocks to /login.
+        (Use Vitest + @testing-library/react for frontend tests.)
+        Run: `cd frontend && npm test` (configure vitest in vite.config.ts or vitest.config.ts).
+
+      CONVENTIONS (§3): English component names, file names, CSS variable names.
+      Spanish text only via t() calls. Mobile-first CSS (390px base, media queries for wider).
+    depends_on: [m1-auth]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: m3-block-planning
+    title: "Implement block planning — full CRUD on nested blocks with mobile drill-down editor"
+    description: >
+      Implement the full block planning module — backend CRUD + duplication endpoint +
+      mobile frontend editor with drill-down navigation.
+
+      DATA MODEL (§4.3 — the PLAN):
+        Collection `blocks`:
+          Block { id, userId, name, order, createdAt, weeks: Week[] }
+          Week  { number: int, days: Day[] }
+          Day   { order: int, label: string, entries: ExerciseEntry[] }
+          ExerciseEntry {
+            exerciseId, exerciseName (denormalized), movementPattern (denormalized),
+            order, setGroups: SetGroup[]
+          }
+          SetGroup {
+            id: string (stable within block, used to link logs),
+            type: enum { WARMUP, WORKING },
+            weightKg, reps, sets, targetRpe: number | null
+          }
+        userId is ALWAYS taken from JWT — never from client body (§3.3).
+
+      ENDPOINTS (JWT required):
+        GET  /api/blocks         → list with metadata only (id, name, order, createdAt,
+                                   weekCount). No nested data in the list.
+        POST /api/blocks         → create block. Body: { name, weeks: [...] }
+                                   Returns 201 + full block.
+        GET  /api/blocks/{id}    → full nested block. 404 if not found or not owned by caller.
+        PUT  /api/blocks/{id}    → replace entire nested block. Returns updated block.
+                                   Validate ownership before update.
+        DELETE /api/blocks/{id}  → delete. 204 on success. 404 if not found/not owned.
+        POST /api/blocks/{id}/duplicate
+          Body: { progressionType: "WEIGHT" | "REPS" | null, progressionValue: number | null }
+          Deep-copies the block (new id, new setGroup ids via UUID, name += " (copy)").
+          If progressionType == "WEIGHT": add progressionValue kg to all WORKING setGroups.
+          If progressionType == "REPS":  add progressionValue reps to all WORKING setGroups.
+          Returns 201 + new block.
+
+      FRONTEND — drill-down navigation (NO giant form):
+        Route /blocks — block list with "Nuevo bloque" button (nav key: block.new).
+        Route /blocks/:blockId — week list for that block.
+        Route /blocks/:blockId/weeks/:weekNumber — day list for that week.
+        Route /blocks/:blockId/weeks/:weekNumber/days/:dayOrder — day detail:
+          exercise entries listed, each expandable to show set groups.
+        Route /blocks/:blockId/weeks/:weekNumber/days/:dayOrder/entries/:entryOrder
+          — entry editor: add/edit/remove set groups using react-hook-form.
+          Each SetGroup row: type (WARMUP/WORKING toggle), sets, reps, weightKg, targetRpe.
+          i18n keys: week.label, day.label, set.warmup, set.working, set.weight, set.reps, set.rpe.
+
+        Block editor (create/edit): name field + add weeks button; navigate into weeks.
+        Duplicate block: "Duplicar" button (block.duplicate) opens a bottom sheet / modal
+        with optional progression inputs.
+
+      TESTS (backend):
+        - Round-trip: create a 3-week block with multiple days/entries/setGroups → GET → assert equal.
+        - Ownership: user A cannot GET/PUT/DELETE user B's block (404/403).
+        - Duplicate with WEIGHT progression: all WORKING setGroup weights increased, WARMUP unchanged.
+        - Duplicate with no progression: identical content, new ids.
+        - Tests with `./gradlew test`.
+
+      CONVENTIONS (§3): English field names everywhere. SetGroup.id generated server-side as UUID.
+      exerciseName and movementPattern denormalized at write time from the exercise catalog.
+    depends_on: [m1-auth, m2-catalog]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: m4-gym-session
+    title: "Implement gym session view and set logging with offline support"
+    description: >
+      The most important screen (§7.M4). The in-gym view where users log performed sets.
+      Depends on M1 (auth), M2 (exercises), M3 (blocks/plan), M5 (1RM calculator).
+
+      DATA MODEL (§4.4 — the REALITY):
+        Collection `workoutLogs` — one document per performed set:
+          { id, userId, date, blockId, setGroupId, exerciseId, exerciseName, movementPattern,
+            isBasic, setType, weightKg, reps, rpe, completed, estimatedOneRmKg }
+        Indexes: { userId:1, exerciseId:1, date:1 } and { userId:1, date:1 }
+        userId ALWAYS from JWT. estimatedOneRmKg computed server-side at write time using M5.
+
+      ENDPOINT:
+        POST /api/logs
+          Body: { date, blockId?, setGroupId?, exerciseId, setType, weightKg, reps, rpe?, completed }
+          Server: resolves exerciseName/movementPattern/isBasic from exercise catalog,
+                  computes estimatedOneRmKg via OneRmCalculator using user's preferredOneRmFormula,
+                  sets userId from JWT.
+          Returns: 201 + created WorkoutLog.
+        GET /api/logs?from=&to=&blockId=
+          Returns: logs for the authenticated user filtered by date range and/or blockId.
+          from/to are ISO date strings (inclusive). All three params optional.
+
+      FRONTEND — gym session flow:
+        Route /session:
+          Step 1 — Block selector rendered as horizontal tabs (one tab per block, ordered by `order`).
+                   i18n: session.today key.
+          Step 2 — Day picker: list of days for the selected block (all weeks visible as sections).
+          Step 3 — Day view (the IN-GYM SCREEN):
+            - Warmup set groups: collapsed by default, expandable (tap to expand).
+            - Working set groups: shown as tappable rows.
+              Each row shows: exerciseName, "Nx weightKg kg × reps" (monospace font).
+              Tap → inline edit form: weight/reps/RPE pre-filled from plan, user confirms or edits.
+              "Registrar serie" button (session.logSet) logs the set.
+              After logging: row shows a checkmark, tap again to log another set.
+            - Big tap targets (--tap-target: 44px min). Weight/reps in --font-mono.
+            - UX goal: cold open → today's working sets in ≤2 taps.
+
+        OFFLINE SUPPORT:
+          - Use a TanStack Query mutation with retry.
+          - When offline: queue the log in localStorage (key: `offline_logs`).
+          - On reconnect (online event): flush the queue, retrying each POST /api/logs.
+          - Show "Sin conexión" (app.offline i18n key) banner when offline.
+          - Each log carries: exerciseName, movementPattern, isBasic, estimatedOneRmKg
+            (these are returned by the server on successful POST).
+
+      TESTS (backend):
+        - POST /api/logs: happy path — log is created with correct estimatedOneRmKg.
+        - POST /api/logs: WARMUP set → estimatedOneRmKg is 0 or null (per M5 spec).
+        - GET /api/logs: date range filter works; user B cannot see user A's logs.
+        - Integration: userId always from JWT even if a different userId is in the request body.
+        Tests with `./gradlew test`.
+
+      FRONTEND tests:
+        - DayView renders working sets as tappable rows.
+        - Offline queue: when navigator.onLine is false, mutation queues to localStorage.
+        Run: `cd frontend && npm test`.
+
+      CONVENTIONS (§3): All fields in English. exerciseName/movementPattern/isBasic denormalized
+      at write time. estimatedOneRmKg computed server-side only.
+    depends_on: [m1-auth, m2-catalog, m3-block-planning, m5-one-rm]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: m6-progress-chart
+    title: "Implement progress charts — total-of-basics 1RM and volume-per-exercise with Recharts"
+    description: >
+      Two MongoDB aggregations + Recharts frontend visualization for strength progress tracking.
+
+      ENDPOINTS (JWT required):
+        GET /api/progress/one-rm-total?from=&to=&bucket=week
+          Aggregation over `workoutLogs` for the authenticated user:
+          1. Filter: isBasic=true, setType=WORKING, date in [from, to].
+          2. Group by { week (ISO week of date), movementPattern }.
+          3. Per group: max(estimatedOneRmKg).
+          4. Group by week: sum of those per-pattern maxima.
+          Result: [{ week: "2026-W01", totalOneRm: 450.5 }, ...]
+          IMPORTANT: Two squat variants and two deadlift variants share a movementPattern,
+          so they are de-duplicated naturally (max per pattern, then sum). Never double-count.
+
+        GET /api/progress/volume?exerciseId=&from=&to=&bucket=week
+          Aggregation over `workoutLogs`:
+          1. Filter: exerciseId matches, setType=WORKING, date in [from, to], userId matches.
+          2. Group by week.
+          3. Per week: sum(weightKg * reps).
+          Result: [{ week: "2026-W01", totalVolume: 12500.0 }, ...]
+
+      FRONTEND:
+        Route /progress:
+          - Toggle between two modes: "Total de básicos (1RM)" vs "Volumen por ejercicio".
+          - i18n keys: progress.totalBasics, progress.volume, progress.weekly.
+          - In 1RM mode: LineChart (Recharts) with x=week, y=totalOneRm.
+          - In Volume mode: exercise selector (ExercisePicker from M2) + LineChart x=week, y=volume.
+          - One metric on screen at a time (mobile: no side-by-side charts).
+          - Date range picker: default last 12 weeks.
+          - TanStack Query for data fetching with loading/error states.
+          - Use --font-mono for axis numbers, --color-accent for the line stroke.
+
+      TESTS (backend):
+        - one-rm-total: with seeded logs (SQUAT max=200, DEADLIFT max=220, BENCH max=130 in week W01),
+          total = 550. Verify two squat variants do not double-count (only max per pattern counted).
+        - volume: sum(weightKg*reps) for WORKING sets of a given exercise in a date range.
+        - Ownership: only the authenticated user's logs contribute.
+        Tests with `./gradlew test`.
+
+      CONVENTIONS (§3): English aggregation fields, i18n for all UI labels. No hardcoded Spanish.
+    depends_on: [m1-auth, m4-gym-session, m5-one-rm]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: m7-csv-export
+    title: "Implement CSV export — streamed semicolon-delimited UTF-8 BOM endpoint and frontend download"
+    description: >
+      Streamed CSV export of workout logs, Excel-compatible for Spanish locale.
+
+      ENDPOINT (JWT required):
+        GET /api/export/logs.csv?from=&to=&blockId=
+        - Filter same as GET /api/logs (date range + optional blockId, userId from JWT).
+        - Stream response with virtual threads — do NOT load all rows into a List first.
+          Use a database cursor / reactive stream / ScrollableCursor or Spring Data's
+          scroll API to iterate and write one row at a time.
+        - Content-Type: text/csv; charset=UTF-8
+        - Content-Disposition: attachment; filename="logs.csv"
+        - Prepend UTF-8 BOM (bytes EF BB BF) at the start of the response body.
+        - Delimiter: semicolon (;) — required for Excel in Spanish locale.
+        - Header row (first row after BOM):
+          date;exerciseName;movementPattern;setType;weightKg;reps;rpe;completed;estimatedOneRmKg;blockId;day
+          where `day` is the day label from the block plan (or empty string if no blockId).
+        - Each subsequent row: one WorkoutLog per line, fields in the same order.
+        - Date format: ISO-8601 (yyyy-MM-dd'T'HH:mm:ss'Z').
+        - If a field is null/empty: write empty string (two consecutive semicolons).
+        - Escape any semicolons or newlines inside exerciseName with standard CSV quoting (wrap in double-quotes).
+
+      FRONTEND:
+        - On /settings or /progress page: "Exportar CSV" button (export.csv i18n key).
+        - On click: open a date-range picker (simple from/to date inputs), optional blockId selector.
+        - Trigger the download: create a hidden <a> with href pointing to
+          /api/export/logs.csv?from=...&to=...&blockId=... with the Authorization header
+          (use fetch + Blob + URL.createObjectURL, since the link approach can't set headers).
+        - Show a loading spinner while the download streams.
+
+      TESTS (backend):
+        - Export with 3 known logs → parse the CSV output → assert correct header and 3 data rows.
+        - BOM: first 3 bytes of response are EF BB BF.
+        - Semicolon delimiter: each row has correct number of semicolons.
+        - Accented characters (e.g. exercise name with ó, á): survive round-trip (BOM ensures Excel reads UTF-8).
+        - Ownership: only the authenticated user's logs exported.
+        Tests with `./gradlew test`.
+
+      CONVENTIONS (§3): Column header names in English. The streaming approach must use virtual
+      threads (enabled via spring.threads.virtual.enabled=true from M0). No Spanish hardcoded
+      in Java code; UI labels via es.json.
+    depends_on: [m1-auth, m4-gym-session]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+review:
+  m0-scaffold:
+    status: approved
+    issues: []
+    attempt: 1
+  m1-auth:
+    status: approved
+    issues: []
+    attempt: 1
+  m5-one-rm:
+    status: approved
+    issues: []
+    attempt: 1
+  m2-catalog:
+    status: approved
+    issues: []
+    attempt: 1
+  m8-pwa-shell:
+    status: approved
+    issues: []
+    attempt: 1
+  m3-block-planning:
+    status: approved
+    issues: []
+    attempt: 1
+  m4-gym-session:
+    status: approved
+    issues: []
+    attempt: 1
+  m6-progress-chart:
+    status: approved
+    issues: []
+    attempt: 1
+  m7-csv-export:
+    status: approved
+    issues: []
+    attempt: 1

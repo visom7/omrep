@@ -1,0 +1,85 @@
+{
+  "nav": {
+    "blocks": "Bloques",
+    "progress": "Progreso",
+    "settings": "Ajustes"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "register": "Crear cuenta",
+    "email": "Correo",
+    "password": "Contraseña",
+    "loginButton": "Entrar",
+    "registerButton": "Registrarse",
+    "noAccount": "¿No tienes cuenta?",
+    "haveAccount": "¿Ya tienes cuenta?"
+  },
+  "block": {
+    "new": "Nuevo bloque",
+    "duplicate": "Duplicar",
+    "edit": "Editar bloque",
+    "delete": "Eliminar bloque",
+    "name": "Nombre del bloque",
+    "weeks": "semanas"
+  },
+  "week": {
+    "label": "Semana"
+  },
+  "day": {
+    "label": "Día"
+  },
+  "set": {
+    "warmup": "Calentamiento",
+    "working": "Serie efectiva",
+    "weight": "Peso (kg)",
+    "reps": "Repeticiones",
+    "rpe": "RPE",
+    "completed": "Completada",
+    "sets": "series"
+  },
+  "session": {
+    "today": "Sesión de hoy",
+    "logSet": "Registrar serie",
+    "selectBlock": "Selecciona un bloque",
+    "selectDay": "Selecciona un día",
+    "noBlocks": "No tienes bloques. Crea uno en Bloques."
+  },
+  "progress": {
+    "totalBasics": "Total de básicos (1RM)",
+    "volume": "Volumen por ejercicio",
+    "weekly": "Semanal",
+    "selectExercise": "Selecciona un ejercicio",
+    "noData": "Sin datos en el período seleccionado"
+  },
+  "export": {
+    "csv": "Exportar CSV",
+    "dateFrom": "Desde",
+    "dateTo": "Hasta",
+    "download": "Descargar"
+  },
+  "settings": {
+    "formula": "Fórmula de 1RM",
+    "formulaEpley": "Epley (por defecto)",
+    "formulaBrzycki": "Brzycki",
+    "formulaLombardi": "Lombardi",
+    "displayName": "Nombre para mostrar",
+    "save": "Guardar"
+  },
+  "exercise": {
+    "new": "Nuevo ejercicio",
+    "name": "Nombre del ejercicio",
+    "pattern": "Patrón de movimiento",
+    "isBasic": "Ejercicio básico",
+    "delete": "Eliminar",
+    "custom": "Personalizado"
+  },
+  "app": {
+    "offline": "Sin conexión — los datos se sincronizarán al reconectar",
+    "loading": "Cargando...",
+    "error": "Error al cargar los datos",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar"
+  }
+}

@@ -1,0 +1,294 @@
+.page {
+  padding: var(--space-md);
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  margin-bottom: var(--space-md);
+}
+
+/* Block tabs */
+.tabs {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  padding-bottom: var(--space-sm);
+  margin-bottom: var(--space-md);
+  scrollbar-width: none;
+}
+
+.tab {
+  flex-shrink: 0;
+  height: var(--tap-target);
+  padding: 0 var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.tabActive {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Day list */
+.dayList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.weekLabel {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: var(--space-sm) 0 var(--space-xs);
+  font-family: var(--font-mono);
+}
+
+.dayItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: 0 var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--transition-fast);
+}
+
+.dayItem:active {
+  border-color: var(--color-accent);
+}
+
+.dayMeta {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.empty {
+  color: var(--color-text-muted);
+  padding: var(--space-md) 0;
+}
+
+/* Day view */
+.dayView {
+  padding: var(--space-md);
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--tap-target);
+}
+
+.dayTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  margin-bottom: var(--space-md);
+}
+
+.offlineBanner {
+  background: var(--color-danger);
+  color: #fff;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-md);
+}
+
+/* Warmup */
+.warmupSection {
+  margin-bottom: var(--space-md);
+}
+
+.warmupToggle {
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: 0 var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.warmupList {
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.warmupRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  min-height: var(--tap-target);
+}
+
+.warmupRow:last-child {
+  border-bottom: none;
+}
+
+/* Working sets */
+.workingSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.workingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: calc(var(--tap-target) * 1.5);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  gap: var(--space-md);
+  transition: border-color var(--transition-fast);
+}
+
+.workingRow:active {
+  border-color: var(--color-accent);
+}
+
+.workingRowDone {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.workingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.exerciseName {
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+}
+
+.setInfo {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  color: var(--color-accent);
+  font-weight: var(--weight-bold);
+}
+
+.rpe {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.logged {
+  color: var(--color-success);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+}
+
+.logBtnLabel {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+/* Log form */
+.logForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.logRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.logLabel {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.logInput {
+  width: 80px;
+  height: var(--tap-target);
+  padding: 0 var(--space-sm);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  text-align: center;
+}
+
+.logActions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+.cancelBtn,
+.confirmBtn {
+  flex: 1;
+  height: var(--tap-target);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  font-size: var(--text-sm);
+}
+
+.cancelBtn {
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+}
+
+.confirmBtn {
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
