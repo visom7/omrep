@@ -18,6 +18,8 @@
     "displayNamePlaceholder": "Víctor Soto",
     "emailPlaceholder": "tu@correo.com",
     "passwordHint": "Mínimo 8 caracteres",
+    "inviteCode": "Código de invitación",
+    "inviteCodePlaceholder": "Introduce tu código",
     "loginError": "Correo o contraseña incorrectos"
   },
   "brand": {

@@ -43,4 +43,12 @@ public class GlobalExceptionHandler {
         problem.setDetail(ex.getMessage());
         return problem;
     }
+
+    @ExceptionHandler(UserService.InvalidInviteCodeException.class)
+    public ProblemDetail handleInvalidInviteCode(UserService.InvalidInviteCodeException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+        problem.setTitle("Invalid invite code");
+        problem.setDetail(ex.getMessage());
+        return problem;
+    }
 }

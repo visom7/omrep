@@ -2,6 +2,7 @@ package com.trainingplanner.auth;
 
 import com.trainingplanner.auth.dto.*;
 import com.trainingplanner.domain.OneRmFormula;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -13,18 +14,28 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final String inviteCode;
 
     public UserService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService
+            JwtService jwtService,
+            @Value("${app.invite-code:}") String inviteCode
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.inviteCode = inviteCode;
     }
 
     public TokenResponse register(RegisterRequest request) {
+        // Registration is invite-only: it is disabled unless an invite code is
+        // configured (app.invite-code / INVITE_CODE) and the request matches it.
+        if (inviteCode == null || inviteCode.isBlank()
+                || !inviteCode.equals(request.inviteCode())) {
+            throw new InvalidInviteCodeException();
+        }
+
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyUsedException(request.email());
         }
@@ -126,6 +137,12 @@ public class UserService {
     public static class InvalidTokenException extends RuntimeException {
         public InvalidTokenException() {
             super("Invalid or expired refresh token");
+        }
+    }
+
+    public static class InvalidInviteCodeException extends RuntimeException {
+        public InvalidInviteCodeException() {
+            super("Registration is invite-only: a valid invite code is required");
         }
     }
 }

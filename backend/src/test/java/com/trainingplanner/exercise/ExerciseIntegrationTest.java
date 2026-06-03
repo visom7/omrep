@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(MongoTestContainerConfig.class)
+@org.springframework.test.context.TestPropertySource(properties = "app.invite-code=test-invite-code")
 class ExerciseIntegrationTest {
 
     @Autowired
@@ -226,7 +227,7 @@ class ExerciseIntegrationTest {
     // --- Helper ---
 
     private String registerAndGetToken(String email, String password, String displayName) {
-        TokenResponse tokens = userService.register(new RegisterRequest(email, password, displayName));
+        TokenResponse tokens = userService.register(new RegisterRequest(email, password, displayName, "test-invite-code"));
         return tokens.accessToken();
     }
 }

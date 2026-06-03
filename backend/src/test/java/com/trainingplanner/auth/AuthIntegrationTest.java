@@ -10,6 +10,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -20,7 +21,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(MongoTestContainerConfig.class)
+@TestPropertySource(properties = "app.invite-code=test-invite-code")
 class AuthIntegrationTest {
+
+    private static final String INVITE = "test-invite-code";
 
     @Autowired
     private MockMvc mockMvc;
@@ -40,7 +44,7 @@ class AuthIntegrationTest {
 
     @Test
     void register_validRequest_returns201WithTokens() throws Exception {
-        RegisterRequest req = new RegisterRequest("test@example.com", "password123", "Test User");
+        RegisterRequest req = new RegisterRequest("test@example.com", "password123", "Test User", INVITE);
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -51,8 +55,28 @@ class AuthIntegrationTest {
     }
 
     @Test
+    void register_wrongInviteCode_returns403() throws Exception {
+        RegisterRequest req = new RegisterRequest("nope@example.com", "password123", "User", "wrong-code");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void register_missingInviteCode_returns400() throws Exception {
+        RegisterRequest req = new RegisterRequest("blank@example.com", "password123", "User", "");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void register_duplicateEmail_returns409() throws Exception {
-        RegisterRequest req = new RegisterRequest("dup@example.com", "password123", "User");
+        RegisterRequest req = new RegisterRequest("dup@example.com", "password123", "User", INVITE);
         String json = objectMapper.writeValueAsString(req);
 
         mockMvc.perform(post("/api/auth/register")
@@ -68,7 +92,7 @@ class AuthIntegrationTest {
 
     @Test
     void register_shortPassword_returns400() throws Exception {
-        RegisterRequest req = new RegisterRequest("x@example.com", "short", "User");
+        RegisterRequest req = new RegisterRequest("x@example.com", "short", "User", INVITE);
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -202,7 +226,7 @@ class AuthIntegrationTest {
     // --- Helpers ---
 
     private TokenResponse registerUser(String email, String password, String displayName) throws Exception {
-        RegisterRequest req = new RegisterRequest(email, password, displayName);
+        RegisterRequest req = new RegisterRequest(email, password, displayName, INVITE);
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))

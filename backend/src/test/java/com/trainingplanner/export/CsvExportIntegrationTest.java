@@ -29,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(MongoTestContainerConfig.class)
+@org.springframework.test.context.TestPropertySource(properties = "app.invite-code=test-invite-code")
 class CsvExportIntegrationTest {
 
     @Autowired
@@ -56,7 +57,7 @@ class CsvExportIntegrationTest {
         userRepository.deleteAll();
         logRepository.deleteAll();
 
-        TokenResponse tokens = userService.register(new RegisterRequest("csv@example.com", "password123", "CSV User"));
+        TokenResponse tokens = userService.register(new RegisterRequest("csv@example.com", "password123", "CSV User", "test-invite-code"));
         tokenA = tokens.accessToken();
 
         // Get user id from token (JWT sub)
@@ -64,7 +65,7 @@ class CsvExportIntegrationTest {
         String payload = new String(java.util.Base64.getDecoder().decode(parts[1]));
         userId = payload.replaceAll(".*\"sub\":\"([^\"]+)\".*", "$1");
 
-        TokenResponse tokensB = userService.register(new RegisterRequest("other@example.com", "password123", "Other User"));
+        TokenResponse tokensB = userService.register(new RegisterRequest("other@example.com", "password123", "Other User", "test-invite-code"));
         tokenB = tokensB.accessToken();
 
         // Ensure Bench Press seed exists
