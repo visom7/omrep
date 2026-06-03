@@ -54,6 +54,52 @@ Override the backend's MongoDB target locally with `MONGO_URI=... mvn spring-boo
 
 ---
 
+## Publish images to Docker Hub
+
+The backend and frontend are published as two separate images under the
+**`visom77`** Docker Hub account.
+
+**Prerequisites:** Docker, and a Docker Hub account with push access to `visom77`.
+
+```bash
+# 1. Log in to Docker Hub (once per machine)
+docker login -u visom77
+
+# 2. Build the images (run from the repo root)
+docker build -t visom77/training-planner-backend:latest ./backend
+docker build -t visom77/training-planner-frontend:latest ./frontend
+
+# 3. Push to Docker Hub
+docker push visom77/training-planner-backend:latest
+docker push visom77/training-planner-frontend:latest
+```
+
+To publish a versioned release, tag with the version as well as `latest`:
+
+```bash
+VERSION=1.0.0
+
+docker build -t visom77/training-planner-backend:$VERSION -t visom77/training-planner-backend:latest ./backend
+docker build -t visom77/training-planner-frontend:$VERSION -t visom77/training-planner-frontend:latest ./frontend
+
+docker push visom77/training-planner-backend:$VERSION
+docker push visom77/training-planner-backend:latest
+docker push visom77/training-planner-frontend:$VERSION
+docker push visom77/training-planner-frontend:latest
+```
+
+> **Building on Apple Silicon / ARM for an amd64 server?** Use Buildx to build and
+> push a multi-arch image in one step:
+>
+> ```bash
+> docker buildx build --platform linux/amd64,linux/arm64 \
+>   -t visom77/training-planner-backend:latest ./backend --push
+> docker buildx build --platform linux/amd64,linux/arm64 \
+>   -t visom77/training-planner-frontend:latest ./frontend --push
+> ```
+
+---
+
 ## Run tests
 
 ### Backend
