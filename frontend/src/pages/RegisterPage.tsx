@@ -42,9 +42,21 @@ export function RegisterPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Training Planner</h1>
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
         <h2 className={styles.heading}>{t('auth.register')}</h2>
+        <p className={styles.subtitle}>{t('auth.registerSubtitle')}</p>
+
+        <div className={styles.field}>
+          <label className={styles.label}>{t('settings.displayName')}</label>
+          <input
+            className={styles.input}
+            type="text"
+            autoComplete="name"
+            placeholder={t('auth.displayNamePlaceholder')}
+            {...register('displayName', { required: true })}
+          />
+          {errors.displayName && <span className={styles.error}>{t('app.error')}</span>}
+        </div>
 
         <div className={styles.field}>
           <label className={styles.label}>{t('auth.email')}</label>
@@ -52,6 +64,7 @@ export function RegisterPage() {
             className={styles.input}
             type="email"
             autoComplete="email"
+            placeholder={t('auth.emailPlaceholder')}
             {...register('email', { required: true })}
           />
           {errors.email && <span className={styles.error}>{t('app.error')}</span>}
@@ -63,20 +76,10 @@ export function RegisterPage() {
             className={styles.input}
             type="password"
             autoComplete="new-password"
+            placeholder={t('auth.passwordHint')}
             {...register('password', { required: true, minLength: 8 })}
           />
           {errors.password && <span className={styles.error}>{t('app.error')}</span>}
-        </div>
-
-        <div className={styles.field}>
-          <label className={styles.label}>{t('settings.displayName')}</label>
-          <input
-            className={styles.input}
-            type="text"
-            autoComplete="name"
-            {...register('displayName', { required: true })}
-          />
-          {errors.displayName && <span className={styles.error}>{t('app.error')}</span>}
         </div>
 
         {errors.root && (

@@ -1,0 +1,46 @@
+/* ─────────────────────────────────────────  ProgressPage.module.css  ──── */
+/* TOTAL design — progress page specific classes */
+
+.screen { padding: 6px var(--pad) 28px; display: flex; flex-direction: column; min-height: 100%; }
+
+/* Page header */
+.phead { display: flex; align-items: flex-start; justify-content: space-between; padding: 10px 0 18px; }
+.pheadKick {
+  font-family: var(--font-num); font-size: var(--text-xs); font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 5px;
+}
+.pheadH1 { font-family: var(--font-display); font-weight: var(--weight-black); font-size: var(--text-2xl); letter-spacing: -0.01em; line-height: 1; }
+
+/* Section label */
+.seclabel {
+  font-family: var(--font-num); font-size: var(--text-xs); font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--color-text-muted); margin: 4px 0 10px;
+}
+
+/* Total card */
+.totalCard {
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); padding: 20px var(--pad); margin-bottom: 16px;
+  background: radial-gradient(140% 100% at 100% 0%, color-mix(in srgb, var(--color-accent) 13%, transparent), transparent 60%), var(--color-surface);
+}
+.totalCardBig { display: flex; align-items: baseline; gap: 4px; margin: 6px 0 4px; }
+.totalCardBig .num { font-size: var(--text-hero); line-height: .9; letter-spacing: -0.03em; color: var(--color-text); }
+.totalCardDelta { font-size: var(--text-sm); color: var(--color-accent); font-family: var(--font-num); font-weight: var(--weight-bold); }
+.totalCardSplit { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-border); }
+.totalCardSplit span { font-family: var(--font-num); font-size: 10px; font-weight: var(--weight-bold); letter-spacing: .08em; color: var(--pat, var(--color-text-muted)); }
+.totalCardSplit b { font-size: 22px; font-family: var(--font-num); }
+
+/* Segmented control */
+.segmented { display: flex; background: var(--color-surface-raised); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 4px; gap: 4px; margin-bottom: 14px; }
+.segmentedBtn { flex: 1; cursor: pointer; border: 0; background: none; border-radius: calc(var(--radius-md) - 4px); padding: 9px; font-family: var(--font-sans); font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--color-text-muted); transition: all var(--transition-fast); }
+.segmentedBtnOn { background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-sm); }
+
+/* Chart card */
+.chartCard { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px var(--pad) 12px; }
+.chartCaption { font-size: 11px; color: var(--color-text-muted); margin-top: 8px; text-align: center; }
+
+/* Export ghost button */
+.exportBtn { cursor: pointer; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-muted); font-family: var(--font-sans); font-size: var(--text-sm); font-weight: var(--weight-medium); padding: 10px 16px; margin-top: 14px; width: 100%; }
+
+/* Loading / empty */
+.loading { color: var(--color-text-muted); padding: var(--pad) 0; }
+.empty { color: var(--color-text-muted); padding: var(--pad) 0; font-size: var(--text-sm); }

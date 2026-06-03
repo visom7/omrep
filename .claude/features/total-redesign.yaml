@@ -1,0 +1,585 @@
+feature:
+  id: total-redesign
+  title: "TOTAL — Visual Redesign for Training Planner PWA"
+  description: >
+    High-fidelity visual reskin of the existing React + Vite + TS + CSS Modules +
+    react-i18next + TanStack Query frontend. Brand identity: TOTAL (powerlifting total).
+    Design source in design_handoff_total_redesign/. Data model and API are untouched.
+    Tasks: (1) tokens + global foundation; (2) BottomNav + AppLayout + auth pages;
+    (3) SessionPage restyle + PlateBar component; (4) BlocksListPage + BlockEditorPage
+    restyle + new sheets (duplicate, exercise picker); (5) ProgressPage restyle + CSV
+    export sheet; (6) SettingsPage restyle + theme toggle.
+  created_at: "2026-06-03"
+
+tasks:
+  - id: t1-foundation
+    title: "Replace design tokens, merge global CSS, and merge i18n keys"
+    description: >
+      Foundation task — ~70% of the restyle lands here.
+
+      FILES TO CHANGE:
+        1. frontend/src/styles/tokens.css
+           Replace entirely with design_handoff_total_redesign/styles/tokens.css.
+           This brings in: --color-on-accent, --color-border-strong, --pat-*, --plate-*,
+           --radius-*, --pad, --gap, --row, --text-hero, --font-display, --font-num,
+           --weight-black, --tracking-label, --ease-sheet, light-theme override, and
+           the [data-pat] helper rules.
+
+        2. frontend/src/styles/global.css
+           Merge design_handoff_total_redesign/styles/global.css content:
+           - Keep @import './tokens.css' at the top.
+           - Add Google Fonts @import for Archivo + Space Mono (keep as Option A).
+           - Keep the existing reset (*, html, body, #root).
+           - Add/update: -webkit-font-smoothing: antialiased on body; min-height 100dvh;
+             overflow-x hidden; #root flex+column.
+           - Add new global utility classes: .num (Space Mono, tabular, bold, -0.01em
+             tracking; .num i for the dimmed unit suffix) and .label (mono uppercase
+             kicker, --text-xs, bold, --tracking-label, muted).
+           - Keep :focus-visible, scrollbar rules.
+           - Add @media (prefers-reduced-motion: reduce) block that sets all transitions
+             and animations to .01ms.
+           - Remove the old .mono and .tap utility classes (they are superseded).
+
+        3. frontend/src/locales/es.json
+           Merge design_handoff_total_redesign/locales/es.additions.json NEW keys into the
+           existing file. Do NOT remove any existing keys. New top-level sections to add:
+           brand, session (new keys: streak, exercisesCount, workingSetsCount, todayBadge,
+           setsProgress, targetRpe, noTarget, dayOneRm), progress (new keys: totalLabel,
+           deltaInBlock, abbrevSquat, abbrevBench, abbrevDeadlift, modeTotal, modeVolume,
+           captionTotal, captionVolume), blocks (subtitle, activeBadge, weeksCount,
+           daysCount), editor (all keys), exercise (addTitle, search, createCustom,
+           createTitle, createAdd, namePlaceholder, basicHint, backToCatalog, customTag,
+           noResults, pattern.*), duplicate (all keys), export (new keys: title, range,
+           rangeWeeks, rangeAll, block, blockCurrent, blockAll, rowsToExport, formatNote,
+           download), settings (new keys: account, formulaEpleyExpr, formulaBrzyckiExpr,
+           formulaLombardiExpr, logout, theme, themeDark, themeLight), auth (new keys:
+           registerSubtitle, displayNamePlaceholder, emailPlaceholder, passwordHint).
+           Keep all existing keys (nav, auth.login, auth.register, etc.).
+
+        4. Grep and fix token renames across ALL frontend/src/ components:
+           - --color-border-focus → --color-border-strong
+           - --color-text-on-accent → --color-on-accent
+           These appear in: frontend/src/pages/AuthPage.module.css,
+           frontend/src/pages/session/SessionPage.module.css,
+           frontend/src/pages/blocks/BlocksListPage.module.css,
+           and any inline styles that reference them.
+
+      TESTS:
+        - Update frontend/src/test/components/BottomNav.test.tsx to confirm the nav still
+          renders after the token swap (the existing 3 tests should still pass unchanged).
+        - The token rename grep must ensure no component still references
+          --color-border-focus or --color-text-on-accent.
+        - Write a test in frontend/src/test/styles/tokens.test.ts that imports the CSS file
+          as text and asserts: (a) '--color-on-accent' is present, (b) '--color-border-strong'
+          is present, (c) '--color-border-focus' is NOT present (renamed away),
+          (d) '--color-text-on-accent' is NOT present (renamed away),
+          (e) '[data-theme="light"]' block is present.
+
+      HARD CONSTRAINTS:
+        - No data model changes.
+        - No API changes.
+        - All new i18n keys must have Spanish values.
+        - English-only identifiers in CSS and TS.
+    depends_on: []
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: orchestrator
+
+  - id: t2-nav-auth-layout
+    title: "Restyle BottomNav, AppLayout, LoginPage, and RegisterPage to TOTAL design"
+
+    description: >
+      Restyle the navigation shell and authentication screens to the TOTAL design spec.
+
+      FILES TO CHANGE:
+
+      1. frontend/src/components/BottomNav.module.css
+         Replace content with the BottomNav section from total-components.css:
+         - .bottomnav: grid 4 cols, --nav-height, border-top, frosted glass background
+           (color-mix + backdrop-filter blur 12px), safe-area padding-bottom.
+         - .navitem: flex column center, muted color, Archivo font, 10px uppercase
+           letter-spacing 0.04em, relative positioning.
+         - .navitemActive: --color-accent text color.
+         - .navitemActive::before: 26×3px accent bar at top, border-radius 0 0 3 3.
+         Keep class names compatible with the existing BottomNav.tsx which uses
+         styles.nav, styles.item, styles.active, styles.icon, styles.label.
+         Map: nav→bottomnav, item→navitem, active→navitemActive. Update the TSX
+         accordingly.
+
+      2. frontend/src/components/BottomNav.tsx
+         - Change className references: styles.nav → styles.bottomnav,
+           styles.item → styles.navitem, styles.active → styles.navitemActive.
+         - Replace Unicode char icons with proper SVG inline icons (Session=bolt,
+           Blocks=grid, Progress=trend-up, Settings=gear) as 20×20 SVG elements.
+           Use simple geometric SVGs matching the reference (see data.jsx Icon component).
+           Nav items: Session (bolt/lightning), Blocks (grid 2×2), Progress (arrow up-right),
+           Settings (gear/cog).
+         - The label text for Session tab: use t('session.today') stays correct.
+         - Add a 4px top accent indicator for the active tab via the ::before pseudo.
+
+      3. frontend/src/layouts/AppLayout.module.css  (and AppLayout.tsx)
+         - Remove TopBar from AppLayout (the TOTAL design has no persistent top bar —
+           each screen renders its own page header). Keep BottomNav + OfflineBanner.
+         - The main content area should have padding-bottom = var(--nav-height) + safe-area
+           so content is not hidden behind the bottom nav.
+         - AppLayout.tsx: remove <TopBar /> import and usage.
+
+      4. frontend/src/pages/AuthPage.module.css  (replace fully with TOTAL auth styles)
+         Map TOTAL design classes to the existing TSX class names used in LoginPage +
+         RegisterPage (container, title, form, heading, field, label, input, error,
+         button, link). The TOTAL design uses:
+         - container: vertically centered column, 26px side padding, full dvh.
+         - Brand block: Mark SVG logo + TOTAL wordmark (46px, Archivo 800, letter-spacing
+           .12em) + tagline (Space Mono 11px, muted, letter-spacing .22em).
+         - Fields: .field + .fieldLabel (mono 11px uppercase) + .input (15px, 13px top/bottom
+           padding, 18px sides, 1px border, accent on focus).
+         - .btn .btnAccent (lime, dark text, full width, 16px padding, border-radius --radius-md).
+         - Footer: login footer text "Bloques · Sesiones · 1RM · Volumen" muted.
+         Replace --color-text-on-accent → --color-on-accent (already done in t1, but
+         confirm here too).
+
+      5. frontend/src/pages/LoginPage.tsx
+         Add the TOTAL brand block above the form:
+         - <Mark /> SVG component (inline, ~40px, two accent plates + bar stub geometry).
+         - "TOTAL" wordmark h1 with Archivo 800 46px letter-spacing .12em.
+         - Tagline: t('brand.tagline').
+         - Email / Password fields with uppercase mono labels.
+         - Full-width accent button.
+         - Footer line: t('brand.loginFooter') at the bottom, muted.
+         Keep the existing react-hook-form submission logic unchanged.
+
+      6. frontend/src/pages/RegisterPage.tsx
+         Same skeleton as Login but with displayName field first. Heading 34px bold.
+         Subtitle: t('auth.registerSubtitle'). Toggle link to Login.
+         Keep react-hook-form submission logic unchanged.
+
+      TESTS:
+        - Update frontend/src/test/components/BottomNav.test.tsx to match new class names
+          (bottomnav, navitem, navitemActive) — the 3 existing tests should still pass
+          after class name updates. Add a 4th test: the active tab ::before indicator
+          class is applied.
+        - Write frontend/src/test/pages/LoginPage.test.tsx: (1) renders TOTAL wordmark,
+          (2) renders tagline, (3) email + password fields present, (4) submit calls API.
+        - Write frontend/src/test/pages/RegisterPage.test.tsx: (1) renders heading,
+          (2) displayName field present, (3) has link back to login.
+
+      HARD CONSTRAINTS:
+        - Do NOT change routing — LoginPage stays at /login, RegisterPage at /register.
+        - Keep react-hook-form submission logic and error handling exactly as-is.
+        - No hardcoded Spanish strings — all copy via t().
+        - TopBar component file stays (it exists as a file), just not used in AppLayout.
+    depends_on: [t1-foundation]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: orchestrator
+
+  - id: t3-session-platebar
+    title: "Restyle SessionPage and add PlateBar component"
+    description: >
+      Restyle the SessionPage (list view + day view + log form) and create the new
+      PlateBar component.
+
+      FILES TO CHANGE / CREATE:
+
+      1. frontend/src/components/PlateBar.tsx  (NEW)
+         A purely presentational component: <PlateBar kg={number} />
+         - Given a weight in kg, compute the plates needed per side:
+           available plates: [25, 20, 15, 10, 5, 2.5] kg.
+           bar weight = 20kg. Per-side = (kg - 20) / 2.
+           Greedy algorithm: fill with largest plates first until remainder < 0.5.
+         - Render a row of colored <span> bars (height scales with plate size):
+           25kg → --plate-25 (#e23b3b), height 12px
+           20kg → --plate-20 (#2f6fed), height 10px
+           15kg → --plate-15 (#f2c037), height 9px
+           10kg → --plate-10 (#2faa55), height 7px
+            5kg → --plate-5  (#e7e7e7), height 6px
+           2.5kg → --plate-2_5 (#9aa0a8), height 5px
+         - Container: display flex, align-items flex-end, gap 2px.
+         - Each span: width 3px, border-radius 1px, background = plate color token.
+         - If kg <= 20 (empty bar) or plates don't work out, render nothing (null).
+         - Export: export function PlateBar({ kg }: { kg: number })
+
+      2. frontend/src/pages/session/SessionPage.module.css
+         Replace with the SessionPage section from total-components.css. Key classes:
+         .tabs, .tab, .tabActive, .streak, .weekHead, .dayCard, .dayCardToday,
+         .dayCardTag, .dayCardName, .dayCardMeta, .badgeToday, .progressBar,
+         .progressBarFill, .progressBarLabel, .warmToggle, .warmRow, .sets,
+         .setRow, .setRowDone, .setRowCheck, .setRowCheckOn, .setRowEx, .setRowMeta,
+         .setRowReps, .setRowKg, .basicDot, .plateBar, .plateBar > span,
+         .oneRmStrip, .logForm, .logFormGrid, .stepper, .stepperLabel, .stepperCtl,
+         also .screen, .phead, .pheadKick, .pheadH1, .seclabel, .backbtn.
+         Remove the old class names (page, title, tabs, tab, tabActive, dayList,
+         weekLabel, dayItem, dayMeta, empty, dayView, backBtn, dayTitle,
+         offlineBanner, warmupSection, warmupToggle, warmupList, warmupRow,
+         workingSection, workingRow, workingRowDone, workingInfo, exerciseName,
+         setInfo, mono, rpe, logged, logBtnLabel, logForm, logRow, logLabel,
+         logInput, logActions, cancelBtn, confirmBtn).
+
+      3. frontend/src/pages/session/SessionPage.tsx
+         Restyle to match TOTAL design spec (screens 3 + 4). Keep ALL existing logic
+         (TanStack Query, offline queue, enqueueOfflineLog, flushOfflineQueue).
+
+         SessionPage (list view):
+         - Page header: .phead with kicker t('session.today') + date H1 (today's date,
+           bold 30px) + streak chip (flame icon + streak count, accent, pill outline).
+         - Block selector: .tabs horizontal scroll with .tab / .tabActive pills.
+         - Per-week groups: .weekHead (SEMANA N + flexible rule + N días).
+         - Day cards: .dayCard with data-pat attribute on the element (from the dominant
+           movement pattern of the day's entries), pattern tag (colored via var(--pat)),
+           day name (17px bold), meta (N ejercicios · N series efectivas), chevron.
+           Today's card: .dayCardToday + .badgeToday "HOY" badge.
+           Use t('session.exercisesCount', {count}) and t('session.workingSetsCount', {count}).
+
+         DayView (day view):
+         - Back button .backbtn.
+         - Header: .phead with kicker (SEMANA N · PATTERN colored by pattern, using
+           data-pat on the kicker span) + day label H1.
+         - Completion bar: .progressBar + .progressBarFill (width = done/total %) +
+           .progressBarLabel (t('session.setsProgress', {done, total})).
+         - Warmup toggle: .warmToggle with flame icon + count + chevron.
+         - Section label: .seclabel "SERIES EFECTIVAS".
+         - Set rows: .setRow (min-height --row) with:
+           - Circular check: .setRowCheck / .setRowCheckOn (filled when done).
+           - Exercise name: .setRowEx with .basicDot if isBasic.
+           - Meta: .setRowMeta (N series · t('session.targetRpe', {rpe}) or t('session.noTarget')).
+           - Right stack: .setRowReps (reps, muted mono) above .setRowKg (weight, 23px accent).
+           - PlateBar component below weight.
+           - Done rows: .setRowDone (58% opacity).
+
+         LogForm (inline):
+         - Replace input fields with stepper components:
+           .logFormGrid 3-col grid with .stepper for Peso (±2.5), Reps (±1 min 1),
+           RPE (±0.5 clamp 5–10).
+         - Each stepper: .stepperLabel + .stepperCtl (surface card with − value + buttons).
+         - Live 1RM estimate line: "≈ 1RM: Xkg" using Epley formula client-side
+           (just for display: w * (1 + reps/30)).
+         - Cancel/Registrar buttons (.btn .btnGhost / .btn .btnAccent).
+
+         1RM strip at bottom of DayView: .oneRmStrip showing t('session.dayOneRm') +
+         max weight seen.
+
+      TESTS:
+        - frontend/src/test/components/PlateBar.test.tsx:
+          (1) renders correct plate colors for 100kg (bar=20, per-side=40kg → 25+15),
+          (2) renders nothing for 20kg or less,
+          (3) renders nothing for 0kg,
+          (4) correct number of spans for 60kg (bar=20, per-side=20 → one 20kg plate).
+        - Keep frontend/src/test/logs/offlineQueue.test.ts green (no changes to queue logic).
+
+      HARD CONSTRAINTS:
+        - Keep ALL existing SessionPage logic: TanStack Query hooks, online/offline
+          detection, enqueueOfflineLog, flushOfflineQueue, loggedSets state.
+        - PlateBar is purely presentational — no hooks, no API calls.
+        - No hardcoded Spanish strings.
+        - data-pat values must be uppercase: "SQUAT" | "BENCH" | "DEADLIFT" | "PRESS".
+    depends_on: [t1-foundation]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: orchestrator
+
+  - id: t4-blocks-editor-sheets
+    title: "Restyle BlocksListPage, BlockEditorPage, add BottomSheet + ExercisePicker sheet + DuplicateSheet"
+    description: >
+      Restyle the blocks screens and add three new sheet/overlay components.
+
+      FILES TO CHANGE / CREATE:
+
+      1. frontend/src/components/BottomSheet.tsx  (NEW)
+         A generic animated bottom sheet component.
+         Props: { isOpen: boolean; onClose: () => void; title?: string; children: ReactNode }
+         Implementation:
+         - Renders: backdrop div + sheet div.
+         - On mount: add --on class to both backdrop and sheet on the next frame
+           (requestAnimationFrame or useEffect with minimal timeout) to trigger CSS transitions.
+         - On close: remove --on class, wait ~220ms for animation, then call onClose.
+         - Classes (use CSS Modules mapping to total-components.css names):
+           .backdrop / .backdropOn, .sheet / .sheetOn, .sheetHandle, .sheetTitle, .sheetClose.
+         - The sheet has a drag handle, optional title, and a close ✕ button.
+         - Tap backdrop or close button → close animation then unmount.
+         - Accessibility: role="dialog", aria-modal, focus trap (basic: close on Escape key).
+
+      2. frontend/src/components/BottomSheet.module.css  (NEW)
+         Use the Sheet section from total-components.css verbatim.
+
+      3. frontend/src/components/ExercisePicker.tsx  (REPLACE)
+         Restyle the existing ExercisePicker to match TOTAL spec (screen 7).
+         Keep the TanStack Query data fetching (GET /api/exercises) and existing
+         ExerciseOption interface and onSelect/selectedId props (these are used by
+         ProgressPage + BlockEditorPage).
+         New UI:
+         - Search input with .input styling, placeholder t('exercise.search').
+         - "Nuevo ejercicio personalizado" add button (.addBtnSolid).
+         - List of .pickItem rows: name + pattern label (colored via data-pat,
+           t('exercise.pattern.{PATTERN}')) + '· personalizado' suffix if isCustom
+           + .basicDot if isBasic.
+         - Create-exercise inline form (shown when add button tapped):
+           name input + 3-col movement pattern grid (each option tinted by data-pat)
+           + "Ejercicio básico" switch (.switch / .switchOn) + back link + create button.
+           Create form calls POST /api/exercises and then selects the new exercise.
+         No BottomSheet wrapper in this file — the parent wraps it when used as a sheet.
+
+      4. frontend/src/pages/blocks/BlocksListPage.module.css  (REPLACE)
+         Replace with the BlocksListPage section from total-components.css:
+         .blockCard, .blockCardActive, .blockCardBar, .blockCardActive .blockCardBar,
+         .blockCardBody, .blockCardTop, .blockCardName, .badge, .blockCardStats, .chip,
+         .chipOn. Plus shared .phead, .pheadKick, .pheadH1, .screen, .iconBtn,
+         .iconBtnAccent.
+
+      5. frontend/src/pages/blocks/BlocksListPage.tsx  (RESTYLE)
+         Restyle to TOTAL design (screen 5). Keep TanStack Query logic.
+         - Page header: .phead with kicker t('blocks.subtitle') + H1 t('nav.blocks') +
+           accent icon button (+) to navigate to /blocks/new.
+         - Block cards: .blockCard / .blockCardActive (when active block).
+           - 4px left bar (.blockCardBar, accent if active).
+           - Body: name (.blockCardName) + ACTIVO badge (.badge) if active.
+           - Stats: week count + day count as big mono numbers (.blockCardStats b).
+             Use t('blocks.weeksCount', {count}) and t('blocks.daysCount', {count}).
+           - Chip row: "Duplicar" chip + "Editar" chip (.chip / .chipOn).
+         - Remove the delete-with-× button pattern; replace with chip row.
+         - "Duplicar" chip opens DuplicateSheet for that block.
+         - "Editar" chip navigates to /blocks/:id/edit (existing route).
+         - Add DuplicateSheet import and state (openDuplicateFor: string | null).
+
+      6. frontend/src/components/DuplicateSheet.tsx  (NEW)
+         Bottom sheet for block duplication. Props: { blockId: string; blockName: string; onClose: () => void }
+         Uses BottomSheet.
+         UI (screen 10):
+         - Title: t('duplicate.title').
+         - Subtitle: t('duplicate.subtitle', {name: blockName}).
+         - Three radio options: Copia exacta / +2.5kg / +1 repetición.
+           Each is a button row: radio indicator + name + description line.
+         - "Duplicar" accent button.
+         - After success: success state with accent check ring + t('duplicate.doneText', {name}).
+           Auto-close after 1.5s.
+         Wires to: blocksApi.duplicate(blockId, { progressionType, progressionValue }).
+         On success: invalidate 'blocks' query.
+
+      7. frontend/src/pages/blocks/BlockEditorPage.tsx  (RESTYLE + EXTEND)
+         Extend to a full drill-down editor matching TOTAL spec (screen 6).
+         - Full-screen overlay (.overlay, slide-up animation) with:
+           - Top bar: back button + "Guardar" pill button (.btn .btnAccent).
+           - Big block-name input (styled, no label when at block level).
+           - Per-week sections: .weekHead + day cards by movement pattern + dashed
+             "Añadir día" button (.addBtn).
+           - "Añadir semana" button at bottom (.addBtn).
+         - Day editor level (when a day is selected for editing):
+           - Top bar: back + "Semana N" crumb.
+           - Day-name text input.
+           - Entry cards (.entryCard): name with pattern-tinted left border (.entryName) +
+             remove ✕ button + set-group rows (.sgRow).
+           - Each .sgRow: type pill (CAL muted / EFE accent, .pill .pillWarmup/.pillWorking) +
+             "sets × reps @ weight" (mono text) + RPE display. Tap → inline SetGroupForm.
+           - SetGroupForm: 4 steppers (Series/Reps/Peso/RPE) + type toggle + Eliminar/Hecho.
+           - "+ Calentamiento" and "+ Serie efectiva" add buttons.
+           - "Añadir ejercicio" button at bottom → opens ExercisePicker in BottomSheet.
+         - Keep existing react-hook-form + TanStack Query mutation logic.
+         - Save calls blocksApi.update (PUT /api/blocks/:id) or blocksApi.create (POST).
+
+      TESTS:
+        - frontend/src/test/components/BottomSheet.test.tsx:
+          (1) does not render when isOpen=false,
+          (2) renders title and children when isOpen=true,
+          (3) calls onClose when backdrop is clicked,
+          (4) calls onClose when ✕ button is clicked,
+          (5) calls onClose on Escape key.
+        - frontend/src/test/blocks/BlocksListPage.test.tsx — update the 3 existing tests
+          to match new class names / DOM structure (block names still render, new button
+          still present, loading state). Add a test: "Duplicar" chip is present for each block.
+        - frontend/src/test/components/ExercisePicker.test.tsx:
+          (1) search input renders,
+          (2) exercise names render after data load (mock TanStack Query),
+          (3) onSelect called on item click,
+          (4) custom tag shown for isCustom exercises.
+
+      HARD CONSTRAINTS:
+        - Keep TanStack Query usage for blocks/exercises exactly as-is.
+        - Keep blocksApi.duplicate wired to POST /api/blocks/{id}/duplicate.
+        - No hardcoded Spanish strings — all copy via t().
+        - The ExerciseOption interface in ExercisePicker.tsx must not change (used by ProgressPage).
+    depends_on: [t2-nav-auth-layout, t3-session-platebar]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: orchestrator
+
+  - id: t5-progress-csv
+    title: "Restyle ProgressPage and replace CsvExportButton with CsvExportSheet"
+    description: >
+      Restyle the ProgressPage to TOTAL design and replace the inline CsvExportButton
+      with a proper bottom-sheet CSV export flow.
+
+      FILES TO CHANGE / CREATE:
+
+      1. frontend/src/pages/ProgressPage.module.css  (NEW — currently uses inline styles)
+         Add a new CSS module file with ProgressPage-specific classes from total-components.css:
+         .totalCard, .totalCardBig, .totalCardDelta, .totalCardSplit, .segmented,
+         .segmentedBtn, .segmentedBtnOn, .chartCard, .chartCaption.
+         Plus shared: .screen, .phead, .pheadH1, .pheadKick, .seclabel.
+
+      2. frontend/src/pages/ProgressPage.tsx  (RESTYLE)
+         Restyle to TOTAL design (screen 8). Keep all TanStack Query data fetching.
+         - Page header: .phead with kicker t('nav.progress') + H1 t('nav.progress').
+         - Total card (.totalCard): corner accent-radial background.
+           - Label: t('progress.totalLabel') as .label class.
+           - Hero number: largest totalOneRm value as .num font-size --text-hero (58px).
+             Wrapped: <span className={styles.num}>{val}<i>kg</i></span>.
+           - Delta line (.totalCardDelta): t('progress.deltaInBlock', {kg: delta}).
+           - 3-up split (.totalCardSplit): SENT/BANCA/MUERTO with pattern-colored labels
+             using data-pat on each cell, values from latest week's per-pattern breakdown
+             (if available from the API — otherwise show dashes).
+             Use t('progress.abbrevSquat'), t('progress.abbrevBench'), t('progress.abbrevDeadlift').
+         - Segmented control (.segmented): two buttons for Total 1RM / Volumen.
+           Use t('progress.modeTotal') and t('progress.modeVolume').
+         - Volume mode: exercise chip selector (chips from ExercisePicker, not full dropdown).
+         - Chart card (.chartCard): Recharts LineChart.
+           Stroke/dots/area: --color-accent. Grid/ticks: --color-border / --color-text-muted.
+           Tick fontFamily: var(--font-num).
+           Caption below: t('progress.captionTotal') or t('progress.captionVolume', {exercise}).
+         - Export ghost button → opens CsvExportSheet.
+         Replace all inline styles with CSS module classes.
+
+      3. frontend/src/components/CsvExportSheet.tsx  (NEW)
+         Bottom sheet for CSV export. Props: { onClose: () => void; accessToken: string | null }
+         Uses BottomSheet.
+         UI (screen 9):
+         - Title: t('export.title').
+         - Range segmented: 4 / 8 / 12 / t('export.rangeAll') — sets the date range.
+           4/8/12 = t('export.rangeWeeks', {n: 4/8/12}).
+         - Block scope chips: t('export.blockCurrent') / t('export.blockAll').
+           (blockCurrent scopes to the active block via blockId param if known.)
+         - "Filas a exportar ≈ N" stat line (static estimate or skip if complex).
+         - Format note: t('export.formatNote').
+         - Download button (.btn .btnAccent): t('export.download').
+           On click: fetch /api/export/logs.csv?from&to&blockId with Authorization header,
+           download as Blob (same logic as the existing CsvExportButton).
+         Keep the existing CsvExportButton.tsx file (it's still exported, just not
+         rendered on ProgressPage anymore — replaced by CsvExportSheet).
+
+      4. frontend/src/pages/ProgressPage.tsx
+         - Import CsvExportSheet, BottomSheet.
+         - Add state: exportOpen: boolean.
+         - Ghost export button in the header or below the chart.
+         - <CsvExportSheet isOpen={exportOpen} onClose={...} accessToken={accessToken} />
+
+      TESTS:
+        - frontend/src/test/pages/ProgressPage.test.tsx:
+          (1) renders the segmented control with both mode labels,
+          (2) renders loading state,
+          (3) chart renders when data present (mock useQuery),
+          (4) export button is visible.
+        - frontend/src/test/components/CsvExportSheet.test.tsx:
+          (1) renders within BottomSheet when open,
+          (2) shows range segmented options (4, 8, 12 sem, Todo),
+          (3) download button present.
+
+      HARD CONSTRAINTS:
+        - Keep all TanStack Query hooks in ProgressPage exactly as-is.
+        - Wire CsvExportSheet to GET /api/export/logs.csv?from&to&blockId.
+        - No hardcoded Spanish strings.
+        - CsvExportButton.tsx stays in the repo (other tests / consumers may exist).
+    depends_on: [t2-nav-auth-layout, t4-blocks-editor-sheets]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: orchestrator
+
+  - id: t6-settings-theme
+    title: "Restyle SettingsPage and add theme toggle (dark/light, persisted)"
+    description: >
+      Restyle SettingsPage to TOTAL design and implement the theme toggle.
+
+      FILES TO CHANGE / CREATE:
+
+      1. frontend/src/hooks/useTheme.ts  (NEW)
+         Custom hook managing the theme (dark | light).
+         - Default: 'dark'.
+         - Persist to localStorage (key: 'theme').
+         - On init: read localStorage; if absent default to 'dark'.
+         - setTheme(t): sets document.documentElement.dataset.theme = t ('' for dark,
+           'light' for light — because tokens.css uses :root[data-theme="light"] only,
+           and dark is the default :root).
+           Actually: for dark, remove the attribute or set it to ''; for light set 'light'.
+         - Return: { theme, setTheme }.
+         - Expose via a ThemeContext + ThemeProvider if needed for testing, OR keep as
+           a simple hook that reads/writes directly (simpler for a single-page app).
+
+      2. frontend/src/pages/SettingsPage.module.css  (NEW)
+         Add a CSS module with TOTAL SettingsPage classes from total-components.css:
+         .profile, .profileAvatar, .formula, .formulaOn, .radio, .radioOn,
+         .field, .fieldLabel, .input, .btn, .btnGhost, .btnDanger.
+         Plus shared: .screen, .phead, .pheadH1, .pheadKick, .seclabel.
+
+      3. frontend/src/pages/SettingsPage.tsx  (RESTYLE + EXTEND)
+         Restyle to TOTAL design (screen 11). Keep react-hook-form + apiFetch logic.
+         - Page header: .phead with H1 t('nav.settings').
+         - Profile row (.profile): accent square avatar (.profileAvatar) with user initial
+           + display name + email (fetched via GET /api/users/me using useQuery).
+         - Section label: t('settings.account').
+         - Formula radio list: three .formula rows (Epley/Brzycki/Lombardi), each with:
+           - .radio / .radioOn indicator (filled dot when selected).
+           - Formula name (t('settings.formulaEpley/Brzycki/Lombardi')).
+           - Formula expression in .num mono (t('settings.formulaEpleyExpr') etc).
+           - .formulaOn border on the active row.
+           - Clicking a row sets the formula (controlled state, saved via react-hook-form
+             or direct PUT on change).
+         - Display-name field: .field + .fieldLabel + .input.
+         - Theme toggle: label t('settings.theme') + two buttons
+           (t('settings.themeDark') / t('settings.themeLight')) as a segmented control or
+           toggle switch using useTheme hook.
+           Dark is the default.
+         - Logout button: .btn .btnGhost .btnDanger, calls logout(), t('settings.logout').
+         Remove the old <select> for formula and the <button> using wrong t('auth.login').
+
+      TESTS:
+        - frontend/src/test/hooks/useTheme.test.ts:
+          (1) default theme is 'dark',
+          (2) setTheme('light') sets data-theme on documentElement,
+          (3) setTheme('dark') removes/clears data-theme,
+          (4) persists to localStorage.
+        - frontend/src/test/pages/SettingsPage.test.tsx:
+          (1) renders formula radio options (Epley, Brzycki, Lombardi),
+          (2) renders logout button with correct label t('settings.logout'),
+          (3) theme toggle renders with dark/light options,
+          (4) formula expression shown in mono.
+
+      HARD CONSTRAINTS:
+        - Keep react-hook-form form submission for displayName + formula unchanged.
+        - Keep useAuth().logout() call for logout.
+        - No hardcoded Spanish strings.
+        - Dark is the default theme.
+        - Theme is persisted to localStorage (key: 'theme').
+        - ThemeProvider (if created) should be added to App.tsx wrapping the router.
+    depends_on: [t2-nav-auth-layout]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+review:
+  t1-foundation:
+    status: approved
+    issues: []
+    attempt: 1
+  t2-nav-auth-layout:
+    status: approved
+    issues: []
+    attempt: 1
+  t3-session-platebar:
+    status: approved
+    issues: []
+    attempt: 1
+  t4-blocks-editor-sheets:
+    status: approved
+    issues: []
+    attempt: 1
+  t5-progress-csv:
+    status: approved
+    issues: []
+    attempt: 1
+  t6-settings-theme:
+    status: approved
+    issues: []
+    attempt: 1

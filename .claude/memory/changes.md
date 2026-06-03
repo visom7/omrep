@@ -312,6 +312,129 @@
 
 **Coverage:** CsvExportIntegrationTest: 7 tests. BOM, delimiter, escaping, ownership, auth verified.
 
+## [2026-06-03] feature:total-redesign | COMPLETED
+
+**Resumen:** 6 tareas aprobadas en 6 intentos totales (1 por tarea, all first-attempt approvals).
+
+**Ficheros modificados:**
+- `frontend/src/styles/tokens.css` — replaced with TOTAL design tokens
+- `frontend/src/styles/global.css` — replaced with TOTAL global base
+- `frontend/src/locales/es.json` — merged all TOTAL i18n keys
+- `frontend/src/pages/AuthPage.module.css` — TOTAL auth styles
+- `frontend/src/pages/session/SessionPage.module.css` — TOTAL session styles
+- `frontend/src/pages/blocks/BlocksListPage.module.css` — TOTAL blocks styles
+- `frontend/src/components/BottomNav.module.css` — TOTAL nav styles
+- `frontend/src/components/BottomNav.tsx` — SVG icons + new class names
+- `frontend/src/layouts/AppLayout.tsx` — removed TopBar
+- `frontend/src/layouts/AppLayout.module.css` — updated
+- `frontend/src/pages/LoginPage.tsx` — TOTAL brand block
+- `frontend/src/pages/RegisterPage.tsx` — TOTAL design
+- `frontend/src/pages/session/SessionPage.tsx` — TOTAL restyle + PlateBar
+- `frontend/src/pages/blocks/BlocksListPage.tsx` — TOTAL restyle + DuplicateSheet
+- `frontend/src/pages/blocks/BlockEditorPage.tsx` — TOTAL restyle + day editor
+- `frontend/src/pages/ProgressPage.tsx` — TOTAL restyle
+- `frontend/src/pages/ProgressPage.module.css` — NEW
+- `frontend/src/pages/SettingsPage.tsx` — TOTAL restyle + theme toggle
+- `frontend/src/pages/SettingsPage.module.css` — NEW
+- `frontend/src/components/PlateBar.tsx` — NEW
+- `frontend/src/components/BottomSheet.tsx` — NEW
+- `frontend/src/components/BottomSheet.module.css` — NEW
+- `frontend/src/components/ExercisePicker.tsx` — REPLACED (TOTAL design)
+- `frontend/src/components/DuplicateSheet.tsx` — NEW
+- `frontend/src/components/CsvExportSheet.tsx` — NEW
+- `frontend/src/hooks/useTheme.ts` — NEW
+- `frontend/src/test/styles/tokens.test.ts` — NEW (5 tests)
+- `frontend/src/test/components/BottomNav.test.tsx` — UPDATED (4 tests)
+- `frontend/src/test/components/PlateBar.test.tsx` — NEW (4 tests)
+- `frontend/src/test/components/BottomSheet.test.tsx` — NEW (5 tests)
+- `frontend/src/test/components/ExercisePicker.test.tsx` — NEW (4 tests)
+- `frontend/src/test/components/CsvExportSheet.test.tsx` — NEW (3 tests)
+- `frontend/src/test/pages/LoginPage.test.tsx` — NEW (4 tests)
+- `frontend/src/test/pages/RegisterPage.test.tsx` — NEW (3 tests)
+- `frontend/src/test/pages/ProgressPage.test.tsx` — NEW (4 tests)
+- `frontend/src/test/pages/SettingsPage.test.tsx` — NEW (4 tests)
+- `frontend/src/test/hooks/useTheme.test.ts` — NEW (4 tests)
+- `frontend/src/test/blocks/BlocksListPage.test.tsx` — UPDATED (4 tests)
+
+## [2026-06-03] feature:total-redesign | t5-progress-csv | developer | attempt:1
+
+**Tarea:** Restyle ProgressPage and replace CsvExportButton with CsvExportSheet
+
+**Cambios realizados:**
+- `frontend/src/pages/ProgressPage.module.css`: NEW — totalCard, totalCardBig, totalCardDelta, totalCardSplit, segmented, segmentedBtn, segmentedBtnOn, chartCard, chartCaption, exportBtn, screen, phead, pheadKick, pheadH1, seclabel, loading, empty
+- `frontend/src/pages/ProgressPage.tsx`: RESTYLED — TOTAL design with phead, totalCard (hero number, delta, 3-up split), segmented control (Total 1RM / Volumen), chart card with Recharts, export ghost button; all TanStack Query hooks preserved; useAuth for accessToken
+- `frontend/src/components/CsvExportSheet.tsx`: NEW — BottomSheet wrapper, range segmented (4/8/12/all weeks), block scope chips (current/all), format note, download button with same fetch+Blob logic as CsvExportButton; CsvExportButton.tsx kept in repo
+- `frontend/src/test/pages/ProgressPage.test.tsx`: NEW — 4 tests (segmented modes, loading state, chart renders, export button visible)
+- `frontend/src/test/components/CsvExportSheet.test.tsx`: NEW — 3 tests (renders in BottomSheet, range options, download button present)
+
+## [2026-06-03] feature:total-redesign | t6-settings-theme | developer | attempt:1
+
+**Tarea:** Restyle SettingsPage and add theme toggle (dark/light, persisted)
+
+**Cambios realizados:**
+- `frontend/src/hooks/useTheme.ts`: NEW — default 'dark', localStorage key 'theme', sets/removes document.documentElement.dataset.theme, returns { theme, setTheme }
+- `frontend/src/pages/SettingsPage.module.css`: NEW — profile, profileAvatar, formula, formulaOn, radio, radioOn, field, fieldLabel, input, btn, btnGhost, btnDanger, btnAccent, segmented, segmentedBtn, segmentedBtnOn, screen, phead, pheadH1, seclabel
+- `frontend/src/pages/SettingsPage.tsx`: RESTYLED + EXTENDED — phead, profile row with user initial, formula radio list (Epley/Brzycki/Lombardi) with name + expression, display name field, theme toggle (Oscuro/Claro segmented), logout button; kept react-hook-form + logout logic; useQuery for /api/users/me
+- `frontend/src/test/hooks/useTheme.test.ts`: NEW — 4 tests (default dark, setTheme light, setTheme dark clears, persists to localStorage)
+- `frontend/src/test/pages/SettingsPage.test.tsx`: NEW — 4 tests (formula radios, logout button, theme toggle, formula expression mono)
+
+## [2026-06-03] feature:total-redesign | t4-blocks-editor-sheets | developer | attempt:1
+
+**Tarea:** Restyle BlocksListPage, BlockEditorPage, add BottomSheet + ExercisePicker + DuplicateSheet
+
+**Cambios realizados:**
+- `frontend/src/components/BottomSheet.tsx`: NEW — generic animated bottom sheet, backdrop + sheet, animation via requestAnimationFrame, Escape key close, role="dialog" aria-modal
+- `frontend/src/components/BottomSheet.module.css`: NEW — backdrop, backdropOn, sheet, sheetOn, sheetHandle, sheetHeader, sheetTitle, sheetClose, sheetBody
+- `frontend/src/components/ExercisePicker.tsx`: REPLACED — TOTAL design with search input, add-custom button, pick items with data-pat colors, create-exercise inline form with pattern grid + basic switch; ExerciseOption interface unchanged
+- `frontend/src/components/DuplicateSheet.tsx`: NEW — uses BottomSheet, 3 progression radio options, duplicate action, success state with auto-close 1.5s
+- `frontend/src/pages/blocks/BlocksListPage.module.css`: REPLACED — TOTAL classes (screen, phead, pheadKick, pheadH1, iconBtn, iconBtnAccent, blockCard, blockCardActive, blockCardBar, blockCardBody, blockCardTop, blockCardName, badge, blockCardStats, chipRow, chip, chipOn, loading, empty)
+- `frontend/src/pages/blocks/BlocksListPage.tsx`: RESTYLED — TOTAL design with phead, icon button (+), block cards with bar/badge/stats/chip row, DuplicateSheet integration
+- `frontend/src/pages/blocks/BlockEditorPage.tsx`: RESTYLED + EXTENDED — overlay layout, top bar with back+save, block name input, week sections with day cards, day-level drill-down editor with exercise entries + set groups, ExercisePicker in BottomSheet; keeps react-hook-form + TanStack Query mutations
+- `frontend/src/test/components/BottomSheet.test.tsx`: NEW — 5 tests (not render, render+children, backdrop click, close button, Escape key)
+- `frontend/src/test/blocks/BlocksListPage.test.tsx`: UPDATED — 3 existing tests preserved (loading, block names, new button), 4th test: Duplicar chip present for each block
+- `frontend/src/test/components/ExercisePicker.test.tsx`: NEW — 4 tests (search input, exercise names, onSelect called, custom tag shown)
+
+## [2026-06-03] feature:total-redesign | t2-nav-auth-layout | developer | attempt:1
+
+**Tarea:** Restyle BottomNav, AppLayout, LoginPage, and RegisterPage to TOTAL design
+
+**Cambios realizados:**
+- `frontend/src/components/BottomNav.module.css`: Replaced with TOTAL bottomnav, navitem, navitemActive styles (frosted glass, accent top bar via ::before pseudo)
+- `frontend/src/components/BottomNav.tsx`: Updated class names (bottomnav/navitem/navitemActive), replaced Unicode icons with SVG inline icons (IconBolt, IconGrid, IconTrendUp, IconGear)
+- `frontend/src/layouts/AppLayout.tsx`: Removed TopBar import and usage; layout now: OfflineBanner + main + BottomNav
+- `frontend/src/layouts/AppLayout.module.css`: Updated breakpoint to 441px (max-content-width 440px)
+- `frontend/src/pages/AuthPage.module.css`: Replaced with TOTAL auth styles (brand block, mono labels, accent button, footer)
+- `frontend/src/pages/LoginPage.tsx`: Added TOTAL brand block (Mark SVG + TOTAL wordmark + tagline), mono field labels, footer
+- `frontend/src/pages/RegisterPage.tsx`: Added subtitle (registerSubtitle), displayName field first, mono labels
+- `frontend/src/test/components/BottomNav.test.tsx`: Updated active class check to navitemActive, added 4th test for accent indicator class
+- `frontend/src/test/pages/LoginPage.test.tsx`: NEW — 4 tests (TOTAL wordmark, tagline, fields present, submit calls API)
+- `frontend/src/test/pages/RegisterPage.test.tsx`: NEW — 3 tests (heading, displayName field, link back to login)
+
+## [2026-06-03] feature:total-redesign | t3-session-platebar | developer | attempt:1
+
+**Tarea:** Restyle SessionPage and add PlateBar component
+
+**Cambios realizados:**
+- `frontend/src/components/PlateBar.tsx`: NEW — purely presentational, greedy plate algorithm, IPF plate colors, renders per-side plates as colored spans
+- `frontend/src/pages/session/SessionPage.module.css`: Replaced with TOTAL classes (screen, phead, pheadKick, pheadH1, streak, tabs, tab, tabActive, weekHead, dayCard, dayCardToday, dayCardTag, dayCardName, dayCardMeta, badgeToday, progressBar, progressBarFill, progressBarLabel, warmToggle, warmRow, sets, setRow, setRowDone, setRowCheck, setRowCheckOn, setRowEx, setRowMeta, setRowReps, setRowKg, basicDot, plateBar, oneRmStrip, logForm, logFormGrid, stepper, stepperLabel, stepperCtl, btn, btnAccent, btnGhost, logActions, backbtn, seclabel)
+- `frontend/src/pages/session/SessionPage.tsx`: Restyled to TOTAL design; added PlateBar, stepper-based LogForm, progress bar, 1RM strip, day cards with data-pat, week grouping; kept ALL existing TanStack Query + offline logic
+- `frontend/src/test/components/PlateBar.test.tsx`: NEW — 4 tests (100kg plates, 20kg empty, 0kg empty, 60kg single plate)
+
+## [2026-06-03] feature:total-redesign | t1-foundation | developer | attempt:1
+
+**Tarea:** Replace design tokens, merge global CSS, and merge i18n keys
+
+**Cambios realizados:**
+- `frontend/src/styles/tokens.css`: Replaced entirely with TOTAL design tokens (--color-on-accent, --color-border-strong, --pat-*, --plate-*, --radius-*, --pad, --gap, --row, --text-hero, --font-display, --font-num, --weight-black, --tracking-label, --ease-sheet, light-theme override, [data-pat] helper rules)
+- `frontend/src/styles/global.css`: Replaced with TOTAL global base (Google Fonts @import for Archivo + Space Mono, updated body with antialiased + min-height 100dvh + overflow-x hidden, #root flex+column, new .num and .label utility classes, @media prefers-reduced-motion, removed .mono and .tap)
+- `frontend/src/locales/es.json`: Merged all new TOTAL keys (brand, session new keys, progress new keys, blocks new keys, editor, exercise new keys, duplicate, export new keys, settings new keys, auth new keys) while keeping all existing keys
+- `frontend/src/pages/AuthPage.module.css`: --color-text-on-accent → --color-on-accent
+- `frontend/src/pages/session/SessionPage.module.css`: --color-text-on-accent → --color-on-accent
+- `frontend/src/pages/blocks/BlocksListPage.module.css`: --color-text-on-accent → --color-on-accent
+- `frontend/src/test/styles/tokens.test.ts`: NEW — 5 assertions about token presence/absence
+
+**Tests:** frontend/src/test/styles/tokens.test.ts (5 tests), frontend/src/test/components/BottomNav.test.tsx (3 existing tests unchanged, still pass)
+
 ## [2026-06-01] feature:training-planner | COMPLETED
 
 **Resumen:** 9 tareas aprobadas en 9 intentos totales (1 por tarea, all first-attempt approvals).

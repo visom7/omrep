@@ -1,0 +1,112 @@
+{
+  "_comment": "New keys introduced by the TOTAL redesign. Merge into frontend/src/locales/es.json. Existing keys are unchanged.",
+
+  "brand": {
+    "name": "TOTAL",
+    "tagline": "Planifica · Levanta · Suma",
+    "loginFooter": "Bloques · Sesiones · 1RM · Volumen"
+  },
+  "auth": {
+    "registerSubtitle": "Empieza tu primer bloque",
+    "displayNamePlaceholder": "Víctor Soto",
+    "emailPlaceholder": "tu@correo.com",
+    "passwordHint": "Mínimo 8 caracteres"
+  },
+  "session": {
+    "streak": "Racha",
+    "exercisesCount": "{{count}} ejercicios",
+    "workingSetsCount": "{{count}} series efectivas",
+    "todayBadge": "HOY",
+    "setsProgress": "{{done}}/{{total}} series",
+    "targetRpe": "objetivo RPE {{rpe}}",
+    "noTarget": "objetivo —",
+    "dayOneRm": "1RM est. del día"
+  },
+  "progress": {
+    "totalLabel": "Total de básicos · 1RM",
+    "deltaInBlock": "▲ {{kg}}kg en el bloque",
+    "abbrevSquat": "Sent",
+    "abbrevBench": "Banca",
+    "abbrevDeadlift": "Muerto",
+    "modeTotal": "Total 1RM",
+    "modeVolume": "Volumen",
+    "captionTotal": "Suma de los mejores 1RM por patrón, por semana",
+    "captionVolume": "Tonelaje semanal · {{exercise}}"
+  },
+  "blocks": {
+    "subtitle": "Tus planes",
+    "activeBadge": "ACTIVO",
+    "weeksCount": "{{count}} semanas",
+    "daysCount": "{{count}} días"
+  },
+  "editor": {
+    "blockNameLabel": "Nombre del bloque",
+    "blockNamePlaceholder": "Ej. Bloque Fuerza · Abril",
+    "dayNameLabel": "Nombre del día",
+    "addWeek": "Añadir semana",
+    "addDay": "Añadir día",
+    "addExercise": "Añadir ejercicio",
+    "addWarmup": "Calentamiento",
+    "addWorkingSet": "Serie efectiva",
+    "noExercises": "Sin ejercicios. Añade el primero abajo.",
+    "save": "Guardar",
+    "done": "Hecho",
+    "typeWarmup": "Calentamiento",
+    "typeWorking": "Efectiva"
+  },
+  "exercise": {
+    "addTitle": "Añadir ejercicio",
+    "search": "Buscar ejercicio…",
+    "createCustom": "Nuevo ejercicio personalizado",
+    "createTitle": "Nuevo ejercicio",
+    "createAdd": "Crear y añadir",
+    "namePlaceholder": "Ej. Sentadilla frontal",
+    "basicHint": "Cuenta para el total de 1RM",
+    "backToCatalog": "Volver al catálogo",
+    "customTag": "personalizado",
+    "noResults": "Sin resultados. Crea uno personalizado.",
+    "pattern": {
+      "SQUAT": "Sentadilla",
+      "BENCH": "Banca",
+      "DEADLIFT": "Peso muerto",
+      "PRESS": "Press",
+      "ROW": "Remo",
+      "ACCESSORY": "Accesorio"
+    }
+  },
+  "duplicate": {
+    "title": "Duplicar bloque",
+    "subtitle": "Crea una copia de «{{name}}» aplicando una progresión automática.",
+    "optNone": "Copia exacta",
+    "optNoneDesc": "Mismos pesos y repeticiones",
+    "optKg": "+2.5 kg",
+    "optKgDesc": "Solo en series efectivas",
+    "optRep": "+1 repetición",
+    "optRepDesc": "En todas las series efectivas",
+    "action": "Duplicar",
+    "doneTitle": "Bloque duplicado",
+    "doneText": "«{{name}}» duplicado"
+  },
+  "export": {
+    "title": "Exportar CSV",
+    "range": "Rango",
+    "rangeWeeks": "{{n}} sem",
+    "rangeAll": "Todo",
+    "block": "Bloque",
+    "blockCurrent": "Bloque activo",
+    "blockAll": "Todos",
+    "rowsToExport": "Filas a exportar",
+    "formatNote": "Delimitador «;» + BOM UTF-8 · compatible con Excel (ES) y acentos.",
+    "download": "Descargar .csv"
+  },
+  "settings": {
+    "account": "Tu cuenta",
+    "formulaEpleyExpr": "w · (1 + reps/30)",
+    "formulaBrzyckiExpr": "w · 36/(37−reps)",
+    "formulaLombardiExpr": "w · reps^0.10",
+    "logout": "Cerrar sesión",
+    "theme": "Tema",
+    "themeDark": "Oscuro",
+    "themeLight": "Claro"
+  }
+}
