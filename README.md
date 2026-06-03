@@ -100,6 +100,36 @@ docker push visom77/training-planner-frontend:latest
 
 ---
 
+## Production deployment (Portainer + external MongoDB)
+
+For the mini-PC deployment, use **`docker-compose.prod.yml`**. Unlike
+`docker-compose.yml` (which builds images and bundles MongoDB for local dev),
+this stack pulls the prebuilt images from the registry and connects to an
+**external MongoDB** — no bundled `mongodb` service.
+
+Define these environment variables in the Portainer stack's
+**Environment variables** section (they only take effect when the stack is
+recreated):
+
+| Variable | Example |
+| --- | --- |
+| `REGISTRY` | `visom77` |
+| `MONGO_URI` | `mongodb://user:pass@192.168.1.102:27017/training_planner?authSource=admin` |
+| `JWT_ACCESS_SECRET` | an HS256 secret, at least 32 bytes |
+
+Ports published by the stack: frontend on `91`, backend on `8091`.
+
+> If the backend log shows `localhost:27017` at startup, `MONGO_URI` is empty —
+> the variable is not defined in the stack. An empty `MONGO_URI` makes the Mongo
+> driver fall back to its `localhost:27017` default rather than the
+> `application.properties` value.
+
+The external MongoDB must accept LAN connections: `bindIp` including `0.0.0.0`
+(or the host IP), the auth user present in `authSource`, and the firewall
+allowing `27017`.
+
+---
+
 ## Run tests
 
 ### Backend
@@ -140,7 +170,8 @@ omrep/
 │   │   ├── styles/       tokens.css — design tokens, global.css
 │   │   └── ...           components, pages, api, auth
 │   └── public/
-├── docker-compose.yml    Full stack: mongodb + backend + frontend
+├── docker-compose.yml       Local dev: mongodb + backend + frontend (builds images)
+├── docker-compose.prod.yml  Production (Portainer): registry images + external MongoDB
 └── README.md
 ```
 
