@@ -1,0 +1,30 @@
+# Production stack — deployed via Portainer on the mini PC.
+#
+# Unlike docker-compose.yml (local dev: builds images + bundles MongoDB),
+# this stack pulls prebuilt images from the registry and connects to an
+# EXTERNAL MongoDB. There is no bundled mongodb service here.
+#
+# Required environment variables (define them in the Portainer stack's
+# "Environment variables" section, or in a sibling .env file):
+#   REGISTRY           e.g. visom77
+#   MONGO_URI          e.g. mongodb://user:pass@192.168.1.102:27017/padel?authSource=admin
+#   JWT_ACCESS_SECRET  HS256 secret, at least 32 bytes
+services:
+  backend:
+    image: ${REGISTRY}/training-planner-backend:latest
+    container_name: training-planner-backend
+    restart: unless-stopped
+    ports:
+      - "8091:8080"
+    environment:
+      - MONGO_URI=${MONGO_URI}
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+
+  frontend:
+    image: ${REGISTRY}/training-planner-frontend:latest
+    container_name: training-planner-frontend
+    restart: unless-stopped
+    ports:
+      - "91:80"
+    depends_on:
+      - backend
