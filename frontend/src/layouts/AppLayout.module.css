@@ -11,13 +11,13 @@
 
 .main {
   flex: 1;
-  /* Pad bottom for the fixed nav bar */
+  /* Pad bottom for the fixed nav bar + safe area */
   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
   overflow-y: auto;
 }
 
 /* Desktop: show the app centered */
-@media (min-width: 641px) {
+@media (min-width: 441px) {
   .layout {
     box-shadow: var(--shadow-md);
   }

@@ -31,7 +31,7 @@ describe('BottomNav', () => {
     expect(hrefs).toContain('/settings')
   })
 
-  it('active route gets active class', () => {
+  it('active route gets navitemActive class', () => {
     render(
       <MemoryRouter initialEntries={['/blocks']}>
         <BottomNav />
@@ -39,6 +39,18 @@ describe('BottomNav', () => {
     )
 
     const blocksLink = screen.getByText('Bloques').closest('a')
-    expect(blocksLink?.className).toContain('active')
+    expect(blocksLink?.className).toContain('navitemActive')
+  })
+
+  it('active tab has the navitemActive class for the ::before accent indicator', () => {
+    render(
+      <MemoryRouter initialEntries={['/session']}>
+        <BottomNav />
+      </MemoryRouter>
+    )
+
+    // The session tab label is 'Sesión de hoy'
+    const sessionLink = screen.getByText('Sesión de hoy').closest('a')
+    expect(sessionLink?.className).toContain('navitemActive')
   })
 })

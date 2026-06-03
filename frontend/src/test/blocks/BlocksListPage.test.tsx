@@ -10,7 +10,17 @@ vi.mock('../../api/blocks', () => ({
   blocksApi: {
     list: vi.fn(),
     delete: vi.fn(),
+    duplicate: vi.fn(),
   },
+}))
+
+// Mock DuplicateSheet to avoid rendering BottomSheet animations in tests
+vi.mock('../../components/DuplicateSheet', () => ({
+  DuplicateSheet: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="duplicate-sheet">
+      <button onClick={onClose}>close</button>
+    </div>
+  ),
 }))
 
 import { blocksApi } from '../../api/blocks'
@@ -52,13 +62,28 @@ describe('BlocksListPage', () => {
     })
   })
 
-  it('shows "Nuevo bloque" button', async () => {
+  it('shows "Nuevo bloque" button (as + icon button)', async () => {
     vi.mocked(blocksApi.list).mockResolvedValue([])
 
     renderWithProviders(<BlocksListPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Nuevo bloque')).toBeInTheDocument()
+      // The new button is an icon button with aria-label "Nuevo bloque"
+      expect(screen.getByRole('button', { name: 'Nuevo bloque' })).toBeInTheDocument()
+    })
+  })
+
+  it('"Duplicar" chip is present for each block', async () => {
+    vi.mocked(blocksApi.list).mockResolvedValue([
+      { id: '1', name: 'Bloque Fuerza', order: 1, createdAt: '', weekCount: 4 },
+      { id: '2', name: 'Bloque Volumen', order: 2, createdAt: '', weekCount: 3 },
+    ])
+
+    renderWithProviders(<BlocksListPage />)
+
+    await waitFor(() => {
+      const duplicateButtons = screen.getAllByRole('button', { name: /duplicar/i })
+      expect(duplicateButtons.length).toBe(2)
     })
   })
 })

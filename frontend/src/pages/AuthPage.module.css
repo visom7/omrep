@@ -1,21 +1,51 @@
+/* ─────────────────────────────────────────  AuthPage.module.css  ─────── */
+/* TOTAL auth screens: centered column, brand block above the form */
+
 .container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100dvh;
-  padding: var(--space-md);
+  padding: 0 26px;
   background-color: var(--color-bg);
 }
 
-.title {
-  font-family: var(--font-mono);
-  font-size: var(--text-xl);
-  color: var(--color-accent);
-  margin-bottom: var(--space-xl);
-  letter-spacing: 0.05em;
+/* Brand block */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 36px;
+  text-align: center;
 }
 
+.brandMark {
+  width: 40px;
+  height: 40px;
+  color: var(--color-accent);
+  margin-bottom: 4px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 46px;
+  font-weight: var(--weight-black);
+  color: var(--color-text);
+  letter-spacing: .12em;
+  line-height: 1;
+}
+
+.tagline {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+
+/* Form */
 .form {
   width: 100%;
   max-width: 380px;
@@ -25,35 +55,47 @@
 }
 
 .heading {
-  font-size: var(--text-lg);
-  font-weight: var(--weight-medium);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
   color: var(--color-text);
   margin-bottom: var(--space-sm);
 }
 
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+  margin-top: -8px;
+}
+
+/* Fields */
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: 7px;
 }
 
 .label {
-  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  letter-spacing: .1em;
+  text-transform: uppercase;
   color: var(--color-text-muted);
-  font-weight: var(--weight-medium);
 }
 
 .input {
-  height: var(--tap-target);
-  padding: 0 var(--space-md);
-  background-color: var(--color-surface);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  padding: 13px 18px;
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: var(--text-base);
   outline: none;
   transition: border-color var(--transition-fast);
+  width: 100%;
 }
 
 .input:focus {
@@ -65,22 +107,24 @@
   color: var(--color-danger);
 }
 
+/* Buttons */
 .button {
-  height: var(--tap-target);
-  background-color: var(--color-accent);
-  color: var(--color-text-on-accent);
+  width: 100%;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-md);
   font-family: var(--font-sans);
   font-size: var(--text-base);
   font-weight: var(--weight-bold);
+  padding: 16px;
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  transition: filter var(--transition-fast);
   margin-top: var(--space-sm);
 }
 
 .button:hover:not(:disabled) {
-  background-color: var(--color-accent-dim);
+  filter: brightness(1.05);
 }
 
 .button:disabled {
@@ -88,6 +132,7 @@
   cursor: not-allowed;
 }
 
+/* Footer link */
 .link {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
@@ -97,4 +142,17 @@
 .link a {
   color: var(--color-accent);
   text-decoration: none;
+}
+
+/* Footer tagline at bottom */
+.footer {
+  position: fixed;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  letter-spacing: .06em;
+  pointer-events: none;
 }
