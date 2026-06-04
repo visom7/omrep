@@ -9,6 +9,7 @@ interface RegisterFormData {
   email: string
   password: string
   displayName: string
+  inviteCode: string
 }
 
 interface TokenResponse {
@@ -80,6 +81,18 @@ export function RegisterPage() {
             {...register('password', { required: true, minLength: 8 })}
           />
           {errors.password && <span className={styles.error}>{t('app.error')}</span>}
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>{t('auth.inviteCode')}</label>
+          <input
+            className={styles.input}
+            type="text"
+            autoComplete="off"
+            placeholder={t('auth.inviteCodePlaceholder')}
+            {...register('inviteCode', { required: true })}
+          />
+          {errors.inviteCode && <span className={styles.error}>{t('app.error')}</span>}
         </div>
 
         {errors.root && (
