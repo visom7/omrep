@@ -191,6 +191,87 @@ class ExerciseIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    // --- Update custom exercise ---
+
+    @Test
+    void updateExercise_ownCustom_returns200() throws Exception {
+        CreateExerciseRequest req = new CreateExerciseRequest("Old Name", MovementPattern.SQUAT, false);
+        MvcResult createResult = mockMvc.perform(post("/api/exercises")
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
+
+        CreateExerciseRequest updateReq = new CreateExerciseRequest("New Name", MovementPattern.DEADLIFT, true);
+        mockMvc.perform(put("/api/exercises/" + id)
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateReq)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("New Name"))
+                .andExpect(jsonPath("$.movementPattern").value("DEADLIFT"))
+                .andExpect(jsonPath("$.isBasic").value(true))
+                .andExpect(jsonPath("$.isCustom").value(true));
+    }
+
+    @Test
+    void updateExercise_globalSeed_returns403() throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/exercises")
+                        .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var exercises = objectMapper.readTree(result.getResponse().getContentAsString());
+        String globalId = null;
+        for (var ex : exercises) {
+            if (!ex.get("isCustom").asBoolean()) {
+                globalId = ex.get("id").asText();
+                break;
+            }
+        }
+        assertThat(globalId).isNotNull();
+
+        CreateExerciseRequest updateReq = new CreateExerciseRequest("Hacked Name", MovementPattern.SQUAT, false);
+        mockMvc.perform(put("/api/exercises/" + globalId)
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateReq)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateExercise_otherUserExercise_returns403() throws Exception {
+        CreateExerciseRequest req = new CreateExerciseRequest("B's Exercise to Update", MovementPattern.PRESS, false);
+        MvcResult createResult = mockMvc.perform(post("/api/exercises")
+                        .header("Authorization", "Bearer " + tokenB)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
+
+        CreateExerciseRequest updateReq = new CreateExerciseRequest("A Hacking B", MovementPattern.SQUAT, false);
+        mockMvc.perform(put("/api/exercises/" + id)
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateReq)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateExercise_notFound_returns404() throws Exception {
+        CreateExerciseRequest updateReq = new CreateExerciseRequest("Does Not Matter", MovementPattern.SQUAT, false);
+        mockMvc.perform(put("/api/exercises/nonexistent-id-12345")
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateReq)))
+                .andExpect(status().isNotFound());
+    }
+
     // --- Seed idempotency ---
 
     @Test

@@ -34,6 +34,16 @@ public class ExerciseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ExerciseResponse> update(
+            @AuthenticationPrincipal String userId,
+            @PathVariable String id,
+            @Valid @RequestBody CreateExerciseRequest request
+    ) {
+        ExerciseResponse response = exerciseService.update(userId, id, request);
+        return ResponseEntity.ok(response);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @AuthenticationPrincipal String userId,

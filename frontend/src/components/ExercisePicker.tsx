@@ -1,15 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiFetch } from '../api/client'
+import { exercisesApi, ExerciseOption, CreateExercisePayload } from '../api/exercises'
 
-export interface ExerciseOption {
-  id: string
-  name: string
-  movementPattern: string
-  isBasic: boolean
-  isCustom: boolean
-}
+export type { ExerciseOption }
 
 interface ExercisePickerProps {
   onSelect: (exercise: ExerciseOption) => void
@@ -64,19 +58,32 @@ const pickItemStyle: React.CSSProperties = {
   marginBottom: 8,
 }
 
+const iconBtnStyle: React.CSSProperties = {
+  background: 'none',
+  border: 0,
+  cursor: 'pointer',
+  padding: '4px 6px',
+  borderRadius: 'var(--radius-sm)',
+  color: 'var(--color-text-muted)',
+  fontSize: 13,
+  lineHeight: 1,
+  flexShrink: 0,
+}
+
 export function ExercisePicker({ onSelect, selectedId }: ExercisePickerProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const [editingExercise, setEditingExercise] = useState<ExerciseOption | null>(null)
   const [createName, setCreateName] = useState('')
   const [createPattern, setCreatePattern] = useState<Pattern>('SQUAT')
   const [createIsBasic, setCreateIsBasic] = useState(false)
-  const [isCreating, setIsCreating] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exercises'],
-    queryFn: () => apiFetch<ExerciseOption[]>('/api/exercises'),
+    queryFn: exercisesApi.list,
   })
 
   const filtered = useMemo(() => {
@@ -85,40 +92,74 @@ export function ExercisePicker({ onSelect, selectedId }: ExercisePickerProps) {
     return exercises.filter((e) => e.name.toLowerCase().includes(q))
   }, [exercises, search])
 
-  const handleCreate = async () => {
-    if (!createName.trim()) return
-    setIsCreating(true)
+  const openCreate = () => {
+    setEditingExercise(null)
+    setCreateName('')
+    setCreatePattern('SQUAT')
+    setCreateIsBasic(false)
+    setShowCreate(true)
+  }
+
+  const openEdit = (exercise: ExerciseOption, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingExercise(exercise)
+    setCreateName(exercise.name)
+    setCreatePattern(exercise.movementPattern as Pattern)
+    setCreateIsBasic(exercise.isBasic)
+    setShowCreate(true)
+  }
+
+  const handleDelete = async (exercise: ExerciseOption, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!window.confirm(t('exercise.deleteConfirm'))) return
     try {
-      const newEx = await apiFetch<ExerciseOption>('/api/exercises', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: createName.trim(),
-          movementPattern: createPattern,
-          isBasic: createIsBasic,
-        }),
-      })
+      await exercisesApi.delete(exercise.id)
       queryClient.invalidateQueries({ queryKey: ['exercises'] })
-      onSelect(newEx)
-      setShowCreate(false)
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleSave = async () => {
+    if (!createName.trim()) return
+    setIsSaving(true)
+    const payload: CreateExercisePayload = {
+      name: createName.trim(),
+      movementPattern: createPattern,
+      isBasic: createIsBasic,
+    }
+    try {
+      if (editingExercise) {
+        await exercisesApi.update(editingExercise.id, payload)
+        queryClient.invalidateQueries({ queryKey: ['exercises'] })
+        setShowCreate(false)
+        setEditingExercise(null)
+      } else {
+        const newEx = await exercisesApi.create(payload)
+        queryClient.invalidateQueries({ queryKey: ['exercises'] })
+        onSelect(newEx)
+        setShowCreate(false)
+      }
     } catch {
       // ignore
     } finally {
-      setIsCreating(false)
+      setIsSaving(false)
     }
   }
 
   if (showCreate) {
+    const isEditing = editingExercise !== null
     return (
       <div>
         <button
           type="button"
           style={{ background: 'none', border: 0, cursor: 'pointer', color: 'var(--color-text-muted)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--text-sm)' }}
-          onClick={() => setShowCreate(false)}
+          onClick={() => { setShowCreate(false); setEditingExercise(null) }}
         >
           ← {t('exercise.backToCatalog')}
         </button>
         <p style={{ fontFamily: 'var(--font-display)', fontWeight: 'var(--weight-black)', fontSize: 19, marginBottom: 16 }}>
-          {t('exercise.createTitle')}
+          {isEditing ? t('exercise.editTitle') : t('exercise.createTitle')}
         </p>
         <div style={{ marginBottom: 12 }}>
           <input
@@ -182,16 +223,16 @@ export function ExercisePicker({ onSelect, selectedId }: ExercisePickerProps) {
         </p>
         <button
           type="button"
-          disabled={isCreating}
-          onClick={handleCreate}
+          disabled={isSaving}
+          onClick={handleSave}
           style={{
             width: '100%', cursor: 'pointer', border: 0,
             borderRadius: 'var(--radius-md)', background: 'var(--color-accent)',
             color: 'var(--color-on-accent)', fontFamily: 'var(--font-sans)',
-            fontWeight: 700, fontSize: 14, padding: 13, opacity: isCreating ? 0.5 : 1,
+            fontWeight: 700, fontSize: 14, padding: 13, opacity: isSaving ? 0.5 : 1,
           }}
         >
-          {t('exercise.createAdd')}
+          {isEditing ? t('app.save') : t('exercise.createAdd')}
         </button>
       </div>
     )
@@ -208,38 +249,64 @@ export function ExercisePicker({ onSelect, selectedId }: ExercisePickerProps) {
         onChange={(e) => setSearch(e.target.value)}
       />
       {/* Add custom button */}
-      <button type="button" style={addBtnStyle} onClick={() => setShowCreate(true)}>
+      <button type="button" style={addBtnStyle} onClick={openCreate}>
         + {t('exercise.createCustom')}
       </button>
       {/* List */}
       <div>
         {filtered.map((exercise) => (
-          <button
+          <div
             key={exercise.id}
-            type="button"
-            onClick={() => onSelect(exercise)}
-            data-pat={exercise.movementPattern}
-            style={{
-              ...pickItemStyle,
-              background: selectedId === exercise.id ? 'var(--color-surface-raised)' : 'var(--color-surface)',
-            }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}
           >
-            <div>
-              <p style={{
-                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-base)',
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}>
-                {exercise.name}
-              </p>
-              <p style={{
-                fontFamily: 'var(--font-num)', fontSize: 10, fontWeight: 700,
-                letterSpacing: '.06em', color: 'var(--pat, var(--color-text-muted))',
-              }}>
-                {t(`exercise.pattern.${exercise.movementPattern}` as const)}
-                {exercise.isCustom && ` · ${t('exercise.customTag')}`}
-              </p>
-            </div>
-          </button>
+            <button
+              type="button"
+              onClick={() => onSelect(exercise)}
+              data-pat={exercise.movementPattern}
+              style={{
+                ...pickItemStyle,
+                flex: 1,
+                marginBottom: 0,
+                background: selectedId === exercise.id ? 'var(--color-surface-raised)' : 'var(--color-surface)',
+              }}
+            >
+              <div>
+                <p style={{
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-base)',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}>
+                  {exercise.name}
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-num)', fontSize: 10, fontWeight: 700,
+                  letterSpacing: '.06em', color: 'var(--pat, var(--color-text-muted))',
+                }}>
+                  {t(`exercise.pattern.${exercise.movementPattern}` as const)}
+                  {exercise.isCustom && ` · ${t('exercise.customTag')}`}
+                </p>
+              </div>
+            </button>
+            {exercise.isCustom && (
+              <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                <button
+                  type="button"
+                  aria-label={t('exercise.edit')}
+                  style={iconBtnStyle}
+                  onClick={(e) => openEdit(exercise, e)}
+                >
+                  ✎
+                </button>
+                <button
+                  type="button"
+                  aria-label={t('exercise.delete')}
+                  style={{ ...iconBtnStyle, color: 'var(--color-danger, #e74c3c)' }}
+                  onClick={(e) => handleDelete(exercise, e)}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
         ))}
         {filtered.length === 0 && (
           <p style={{ padding: 'var(--pad)', color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>

@@ -41,6 +41,32 @@ public class ExerciseService {
     }
 
     /**
+     * Updates a custom exercise.
+     * Throws 403 if seed global or owned by another user, 404 if not found.
+     */
+    public ExerciseResponse update(String userId, String exerciseId, CreateExerciseRequest request) {
+        Exercise exercise = exerciseRepository.findById(exerciseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
+
+        if (exercise.ownerId() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot update global exercises");
+        }
+
+        if (!exercise.ownerId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot update another user's exercise");
+        }
+
+        Exercise updated = new Exercise(
+                exercise.id(),
+                exercise.ownerId(),
+                request.name(),
+                request.movementPattern(),
+                request.isBasic()
+        );
+        return ExerciseResponse.from(exerciseRepository.save(updated));
+    }
+
+    /**
      * Deletes a custom exercise.
      * Throws 403 if not owned by userId, 404 if not found.
      * Global seeds (ownerId == null) cannot be deleted.
