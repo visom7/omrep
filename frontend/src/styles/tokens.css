@@ -119,3 +119,15 @@
 [data-pat="BENCH"]    { --pat: var(--pat-bench); }
 [data-pat="DEADLIFT"] { --pat: var(--pat-deadlift); }
 [data-pat="PRESS"]    { --pat: var(--pat-press); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   COMPACT BREAKPOINT — iPhone SE / iPhone 12 mini and narrower (≤389px)
+   Override spacing and type-scale tokens only; all other tokens unchanged.
+   ════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 389px) {
+  :root {
+    --pad: 14px;
+    --text-hero: 3rem;     /* 48px, was 58px */
+    --text-2xl: 1.625rem;  /* 26px, was 30px */
+  }
+}

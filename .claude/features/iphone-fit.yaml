@@ -1,0 +1,134 @@
+feature:
+  id: iphone-fit
+  title: "iPhone Responsive Fit (375–430px)"
+  description: >
+    Adapt the frontend so all screens render correctly at 375–430px iPhone widths
+    (SE/mini through Pro Max): no horizontal overflow, no clipped elements.
+    Desktop layout (≥441px) must remain unchanged.
+    Five targeted changes: viewport meta, compact token breakpoint, stepper grid
+    narrowing, Recharts YAxis margin fix, and flex overflow truncation on name cells.
+  created_at: "2026-06-10"
+
+tasks:
+  - id: t1-viewport
+    title: "Add viewport-fit=cover to index.html"
+    description: >
+      In `frontend/index.html`, change the existing viewport meta tag from
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      to
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+      This enables env(safe-area-inset-*) to work correctly on iPhones with notch /
+      Dynamic Island, especially in PWA standalone mode. No other files touched.
+      Test: verify `frontend/index.html` contains `viewport-fit=cover`.
+    depends_on: []
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: t2-tokens-compact
+    title: "Add compact-breakpoint token overrides in tokens.css"
+    description: >
+      In `frontend/src/styles/tokens.css`, append a new media-query block at the
+      end of the file:
+        @media (max-width: 389px) {
+          :root {
+            --pad: 14px;
+            --text-hero: 3rem;     /* 48px, was 58px */
+            --text-2xl: 1.625rem;  /* 26px, was 30px */
+          }
+        }
+      These token overrides shrink hero text and screen padding on iPhone SE /
+      iPhone 12 mini (≤389px logical pixels) without touching any component CSS.
+      No other tokens modified. No other files touched.
+      Test: a Vitest test reads the CSS source and asserts the three token
+      overrides are present inside a `@media (max-width: 389px)` block.
+    depends_on: []
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: t3-stepper-grid
+    title: "Narrow stepper grid in SessionPage.module.css for ≤389px"
+    description: >
+      In `frontend/src/pages/session/SessionPage.module.css`, add a
+      `@media (max-width: 389px)` block that overrides:
+        - `.logFormGrid`: gap from 9px → 6px
+        - `.stepperCtl`: padding from 4px → 2px
+        - `.stepperCtl button`: width from 30px → 26px and height from 34px → 30px
+        - `.stepperValue`: min-width from 40px → 0 and font-size to var(--text-sm)
+          so a value like "142.5" does not overflow in a 375px viewport.
+      Append this block at the end of the file. No other CSS classes changed.
+      Test: a Vitest test reads the CSS source and asserts each override is present
+      inside a `@media (max-width: 389px)` block.
+    depends_on: []
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: t4-progress-chart-margin
+    title: "Fix Recharts YAxis margin in ProgressPage.tsx for narrow screens"
+    description: >
+      In `frontend/src/pages/ProgressPage.tsx`, change the LineChart margin prop from
+        margin={{ top: 8, right: 8, left: -16, bottom: 8 }}
+      to
+        margin={{ top: 8, right: 8, left: 0, bottom: 8 }}
+      and add a `width` prop to the YAxis component:
+        <YAxis width={36} ... />
+      The left: -16 offset clips the Y-axis labels on 375px screens. Setting left: 0
+      and an explicit YAxis width of 36px ensures labels are always visible without
+      wasting space on 430px screens. No other logic changed.
+      Test: a Vitest test checks that the ProgressPage renders a YAxis element and
+      that the LineChart margin left value is 0 (read the JSX or snapshot test).
+    depends_on: []
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+  - id: t5-flex-overflow
+    title: "Add min-width:0 + text truncation to flex name cells"
+    description: >
+      Prevent long exercise/block names from causing horizontal overflow in flex rows.
+
+      In `frontend/src/pages/session/SessionPage.module.css`:
+        - `.dayCardName`: add `min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`
+        - `.setRowEx`: add `min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`
+
+      In `frontend/src/pages/blocks/BlocksListPage.module.css`:
+        - `.blockCardName`: add `min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`
+
+      Use CSS Edit to append these properties inline to the existing rules (do not
+      duplicate rules or add a new block — just extend the existing class bodies).
+      No other CSS classes changed.
+      Test: a Vitest test reads the CSS source and asserts each of the three classes
+      contains `min-width: 0` and `text-overflow: ellipsis`.
+    depends_on: []
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: null
+
+review:
+  t1-viewport:
+    status: approved
+    issues: []
+    attempt: 1
+  t2-tokens-compact:
+    status: approved
+    issues: []
+    attempt: 1
+  t3-stepper-grid:
+    status: approved
+    issues: []
+    attempt: 1
+  t4-progress-chart-margin:
+    status: approved
+    issues: []
+    attempt: 1
+  t5-flex-overflow:
+    status: approved
+    issues: []
+    attempt: 1

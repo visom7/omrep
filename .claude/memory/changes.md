@@ -475,3 +475,123 @@
 
 **Nota de release:** El commit debe ejecutarse manualmente via `.\commit.ps1` (el Gradle wrapper JAR es binario y no puede ser creado por un agente de texto — ver setup.ps1 para descargarlo).
 
+## [2026-06-10] feature:iphone-fit | t1-viewport | developer | attempt:1
+
+**Tarea:** Add viewport-fit=cover to index.html
+
+**Cambios realizados:**
+- `frontend/index.html`: changed viewport meta to include `viewport-fit=cover`
+- `frontend/src/test/styles/iphone-fit.test.ts`: NEW — tests for all 5 iphone-fit tasks (viewport meta, compact tokens, stepper grid, chart margin, flex overflow)
+
+**Decisiones técnicas:**
+- Single meta-tag change; no other files touched
+
+**Tests:** npm test (iphone-fit.test.ts — t1 viewport tests)
+
+## [2026-06-10] feature:iphone-fit | t2-tokens-compact | developer | attempt:1
+
+**Tarea:** Add compact-breakpoint token overrides in tokens.css
+
+**Cambios realizados:**
+- `frontend/src/styles/tokens.css`: appended `@media (max-width: 389px)` block with --pad: 14px, --text-hero: 3rem, --text-2xl: 1.625rem
+- `frontend/src/test/styles/iphone-fit.test.ts`: t2 tests included (media block presence, all 3 token overrides)
+
+**Decisiones técnicas:**
+- Appended at end of file after [data-pat] helper rules; existing tokens untouched
+
+**Tests:** npm test (iphone-fit.test.ts — t2 compact token tests)
+
+## [2026-06-10] feature:iphone-fit | t3-stepper-grid | developer | attempt:1
+
+**Tarea:** Narrow stepper grid in SessionPage.module.css for ≤389px
+
+**Cambios realizados:**
+- `frontend/src/pages/session/SessionPage.module.css`: appended `@media (max-width: 389px)` block overriding .logFormGrid gap (6px), .stepperCtl padding (2px), .stepperCtl button dimensions (26×30px), .stepperValue min-width (0) and font-size (var(--text-sm))
+- `frontend/src/test/styles/iphone-fit.test.ts`: t3 tests included
+
+**Decisiones técnicas:**
+- Block appended at end of file; no existing rules modified
+
+**Tests:** npm test (iphone-fit.test.ts — t3 stepper grid tests)
+
+## [2026-06-10] feature:iphone-fit | t4-progress-chart-margin | developer | attempt:1
+
+**Tarea:** Fix Recharts YAxis margin in ProgressPage.tsx for narrow screens
+
+**Cambios realizados:**
+- `frontend/src/pages/ProgressPage.tsx`: changed LineChart margin `left: -16` → `left: 0`; added `width={36}` prop to YAxis component
+- `frontend/src/test/styles/iphone-fit.test.ts`: t4 tests included (left: 0 present, left: -16 absent, YAxis has width prop)
+
+**Decisiones técnicas:**
+- width={36} chosen as minimum comfortable YAxis label width at font-size 10px; same for both 375px and 430px
+
+**Tests:** npm test (iphone-fit.test.ts — t4 chart margin tests)
+
+## [2026-06-10] feature:iphone-fit | t5-flex-overflow | developer | attempt:1
+
+**Tarea:** Add min-width:0 + text truncation to flex name cells
+
+**Cambios realizados:**
+- `frontend/src/pages/session/SessionPage.module.css`: added `min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;` to `.dayCardName` and `.setRowEx`
+- `frontend/src/pages/blocks/BlocksListPage.module.css`: added `min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;` to `.blockCardName`
+- `frontend/src/test/styles/iphone-fit.test.ts`: t5 tests included (all 3 classes have min-width: 0 and text-overflow: ellipsis)
+
+**Decisiones técnicas:**
+- Extended existing single-line class rules inline; no duplicate rules added
+
+**Tests:** npm test (iphone-fit.test.ts — t5 flex overflow tests)
+
+## [2026-06-10] feature:iphone-fit | t1-viewport | reviewer | attempt:1
+
+**Decisión:** APPROVED
+
+**Issues:** none
+
+**Coverage:** iphone-fit.test.ts t1 group: 2 tests. Viewport meta tag correctly updated with viewport-fit=cover; original width=device-width and initial-scale=1.0 preserved.
+
+## [2026-06-10] feature:iphone-fit | t2-tokens-compact | reviewer | attempt:1
+
+**Decisión:** APPROVED
+
+**Issues:** none
+
+**Coverage:** iphone-fit.test.ts t2 group: 4 tests. @media (max-width: 389px) block present; all three token overrides (--pad, --text-hero, --text-2xl) verified inside the block. Existing token tests still pass.
+
+## [2026-06-10] feature:iphone-fit | t3-stepper-grid | reviewer | attempt:1
+
+**Decisión:** APPROVED
+
+**Issues:** none
+
+**Coverage:** iphone-fit.test.ts t3 group: 4 tests. Compact breakpoint block present with gap: 6px, .stepperCtl override, and min-width: 0 on .stepperValue.
+
+## [2026-06-10] feature:iphone-fit | t4-progress-chart-margin | reviewer | attempt:1
+
+**Decisión:** APPROVED
+
+**Issues:** none
+
+**Coverage:** iphone-fit.test.ts t4 group: 2 tests. LineChart left margin is 0 (not -16); YAxis has width={36} prop. No other ProgressPage logic changed. TypeScript compiles cleanly (width is valid Recharts YAxis prop).
+
+## [2026-06-10] feature:iphone-fit | t5-flex-overflow | reviewer | attempt:1
+
+**Decisión:** APPROVED
+
+**Issues:** none
+
+**Coverage:** iphone-fit.test.ts t5 group: 6 tests. All three classes (.dayCardName, .setRowEx, .blockCardName) have min-width: 0 and text-overflow: ellipsis verified on the correct single-line rule.
+
+## [2026-06-10] feature:iphone-fit | COMPLETED
+
+**Resumen:** 5 tareas aprobadas en 5 intentos totales (1 por tarea, all first-attempt approvals).
+
+**Ficheros modificados:**
+- `frontend/index.html` — added viewport-fit=cover to meta viewport
+- `frontend/src/styles/tokens.css` — appended @media (max-width: 389px) compact token overrides
+- `frontend/src/pages/session/SessionPage.module.css` — appended stepper grid narrowing breakpoint; added min-width:0 + truncation to .dayCardName and .setRowEx
+- `frontend/src/pages/blocks/BlocksListPage.module.css` — added min-width:0 + truncation to .blockCardName
+- `frontend/src/pages/ProgressPage.tsx` — fixed LineChart left margin (0), added YAxis width={36}
+- `frontend/src/test/styles/iphone-fit.test.ts` — NEW: 18 tests covering all 5 tasks
+
+**Nota de release:** Commit pendiente de ejecución manual (ver comandos abajo).
+

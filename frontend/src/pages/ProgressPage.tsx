@@ -154,7 +154,7 @@ export function ProgressPage() {
         ) : (
           <div style={{ width: '100%', height: 220 }}>
             <ResponsiveContainer>
-              <LineChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 8 }}>
+              <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
                 <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" />
                 <XAxis
                   dataKey="week"
@@ -162,6 +162,7 @@ export function ProgressPage() {
                   tickLine={false}
                 />
                 <YAxis
+                  width={36}
                   tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontFamily: 'var(--font-num)' }}
                   tickLine={false}
                 />
