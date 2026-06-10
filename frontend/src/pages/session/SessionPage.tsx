@@ -24,6 +24,12 @@ interface EnrichedSetGroup extends SetGroup {
   movementPattern?: string
 }
 
+interface LoggedSet {
+  weight: number
+  reps: number
+  rpe?: number
+}
+
 // --------------------------------------------------------------------------
 // SessionPage — block tabs + day picker
 // --------------------------------------------------------------------------
@@ -193,7 +199,7 @@ interface DayViewProps {
 function DayView({ block, day, isOnline, onBack }: DayViewProps) {
   const { t } = useTranslation()
   const [warmupExpanded, setWarmupExpanded] = useState(false)
-  const [loggedSets, setLoggedSets] = useState<Record<string, boolean>>({})
+  const [loggedSets, setLoggedSets] = useState<Record<string, LoggedSet>>({})
   const [editingSgId, setEditingSgId] = useState<string | null>(null)
 
   const workingSets: EnrichedSetGroup[] = day.entries.flatMap((e) =>
@@ -238,7 +244,7 @@ function DayView({ block, day, isOnline, onBack }: DayViewProps) {
         enqueueOfflineLog(logReq)
       }
     }
-    setLoggedSets((prev) => ({ ...prev, [sg.id]: true }))
+    setLoggedSets((prev) => ({ ...prev, [sg.id]: { weight, reps, rpe } }))
     setEditingSgId(null)
   }
 
@@ -247,7 +253,10 @@ function DayView({ block, day, isOnline, onBack }: DayViewProps) {
   const dominantPattern = patterns[0] as string | undefined
 
   // Max weight seen (for 1RM strip)
-  const maxWeight = workingSets.reduce((max, sg) => Math.max(max, sg.weightKg), 0)
+  const maxWeight = workingSets.reduce(
+    (max, sg) => Math.max(max, loggedSets[sg.id]?.weight ?? sg.weightKg),
+    0
+  )
 
   return (
     <div className={styles.screen}>
@@ -307,8 +316,11 @@ function DayView({ block, day, isOnline, onBack }: DayViewProps) {
       {/* Working sets section */}
       <p className={styles.seclabel}>{t('session.workingSetsLabel')}</p>
       <div className={styles.sets}>
-        {workingSets.map((sg) =>
-          editingSgId === sg.id ? (
+        {workingSets.map((sg) => {
+          const logged = loggedSets[sg.id]
+          const shownWeight = logged ? logged.weight : sg.weightKg
+          const shownReps = logged ? logged.reps : sg.reps
+          return editingSgId === sg.id ? (
             <div key={sg.id} className={styles.logForm}>
               <LogForm
                 sg={sg}
@@ -319,13 +331,13 @@ function DayView({ block, day, isOnline, onBack }: DayViewProps) {
           ) : (
             <div
               key={sg.id}
-              className={`${styles.setRow} ${loggedSets[sg.id] ? styles.setRowDone : ''}`}
-              onClick={() => !loggedSets[sg.id] && setEditingSgId(sg.id)}
-              style={{ cursor: loggedSets[sg.id] ? 'default' : 'pointer' }}
+              className={`${styles.setRow} ${logged ? styles.setRowDone : ''}`}
+              onClick={() => !logged && setEditingSgId(sg.id)}
+              style={{ cursor: logged ? 'default' : 'pointer' }}
             >
               {/* Check circle */}
-              <div className={`${styles.setRowCheck} ${loggedSets[sg.id] ? styles.setRowCheckOn : ''}`}>
-                {loggedSets[sg.id] && <span style={{ fontSize: 12, color: 'var(--color-on-accent)' }}>✓</span>}
+              <div className={`${styles.setRowCheck} ${logged ? styles.setRowCheckOn : ''}`}>
+                {logged && <span style={{ fontSize: 12, color: 'var(--color-on-accent)' }}>✓</span>}
               </div>
               {/* Exercise name + meta */}
               <div style={{ flex: 1 }}>
@@ -341,13 +353,13 @@ function DayView({ block, day, isOnline, onBack }: DayViewProps) {
               </div>
               {/* Weight + reps */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                <span className={styles.setRowReps}>{sg.reps} reps</span>
-                <span className={styles.setRowKg}>{sg.weightKg}</span>
-                <PlateBar kg={sg.weightKg} />
+                <span className={styles.setRowReps}>{shownReps} reps</span>
+                <span className={styles.setRowKg}>{shownWeight}</span>
+                <PlateBar kg={shownWeight} />
               </div>
             </div>
           )
-        )}
+        })}
       </div>
 
       {/* 1RM strip */}
