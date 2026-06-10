@@ -581,6 +581,77 @@
 
 **Coverage:** iphone-fit.test.ts t5 group: 6 tests. All three classes (.dayCardName, .setRowEx, .blockCardName) have min-width: 0 and text-overflow: ellipsis verified on the correct single-line rule.
 
+## [2026-06-10] feature:block-editor-improvements | t1-backend-exercise-put | developer | attempt:1
+
+**Tarea:** Backend: PUT /api/exercises/{id}
+
+**Cambios realizados:**
+- `backend/src/main/java/com/trainingplanner/exercise/ExerciseService.java`: añadido método update(userId, exerciseId, request) con guards 404/403 (seed global, otro usuario); crea nuevo record Exercise con datos actualizados; devuelve ExerciseResponse.
+- `backend/src/main/java/com/trainingplanner/exercise/ExerciseController.java`: añadido @PutMapping("/{id}") con @Valid @RequestBody CreateExerciseRequest, delega a exerciseService.update(), devuelve 200.
+- `backend/src/test/java/com/trainingplanner/exercise/ExerciseIntegrationTest.java`: añadidos 4 tests: updateExercise_ownCustom_returns200, updateExercise_globalSeed_returns403, updateExercise_otherUserExercise_returns403, updateExercise_notFound_returns404.
+
+**Tests:** ./gradlew test (ExerciseIntegrationTest: 12 tests, 4 nuevos).
+
+## [2026-06-10] feature:block-editor-improvements | COMPLETED
+
+**Resumen:** 6 tareas aprobadas en 6 intentos totales (1 por tarea, all first-attempt approvals).
+
+**Ficheros modificados:**
+- `backend/src/main/java/com/trainingplanner/exercise/ExerciseService.java` — añadido método update()
+- `backend/src/main/java/com/trainingplanner/exercise/ExerciseController.java` — añadido @PutMapping("/{id}")
+- `backend/src/test/java/com/trainingplanner/exercise/ExerciseIntegrationTest.java` — 4 tests nuevos para PUT
+- `frontend/src/api/exercises.ts` — NUEVO módulo API ejercicios
+- `frontend/src/components/ExercisePicker.tsx` — editar/eliminar custom; usa exercisesApi
+- `frontend/src/pages/blocks/BlockEditorPage.tsx` — carga bloque existente; set groups editables; botón Guardar día; duplicar semana
+- `frontend/src/pages/blocks/BlockDetailPage.tsx` — botón Editar bloque
+- `frontend/src/locales/es.json` — claves i18n nuevas (exercise.edit/editTitle/deleteConfirm/updated; editor.sets/reps/weightKg/targetRpe/removeSetGroup/removeEntry/saveDay/duplicateWeek/weekDeltaKg/duplicateWeekHint)
+- `frontend/src/test/blocks/BlockEditorPage.test.tsx` — NUEVO (8 tests)
+- `frontend/src/test/components/ExercisePicker.test.tsx` — ACTUALIZADO (7 tests)
+
+## [2026-06-10] feature:block-editor-improvements | t6-duplicate-week | developer | attempt:1
+
+**Tarea:** Frontend: duplicar semana con ajuste de pesos (kg absolutos)
+
+**Cambios realizados:**
+- `frontend/src/pages/blocks/BlockEditorPage.tsx`: añadidos state duplicatingWeekIndex y weekDelta; handleConfirmDuplicateWeek hace copia profunda con nuevos UUID en setGroups, suma delta a WORKING sets (clamp ≥ 0), inserta semana tras origen, renumera todas, llama setValue('weeks', renumbered); botón "Duplicar semana" en cabecera de cada semana; BottomSheet con input de delta y botón Confirmar.
+- `frontend/src/test/blocks/BlockEditorPage.test.tsx`: añadidos tests: duplicate week opens sheet, duplicate week adds new week.
+
+**Tests:** npm test (BlockEditorPage.test.tsx: 8 tests totales).
+
+## [2026-06-10] feature:block-editor-improvements | t2-frontend-exercise-api | developer | attempt:1
+
+**Tarea:** Frontend: módulo API de ejercicios + editar/eliminar custom en ExercisePicker
+
+**Cambios realizados:**
+- `frontend/src/api/exercises.ts`: NUEVO — exercisesApi con list/create/update/delete; ExerciseOption y CreateExercisePayload types.
+- `frontend/src/components/ExercisePicker.tsx`: refactorizado para usar exercisesApi en lugar de apiFetch directo; para isCustom=true muestra botones editar (✎) y eliminar (✕) con aria-labels; flujo editar precarga el formulario existente y llama update(); flujo eliminar usa window.confirm y llama delete(); invalida ['exercises'].
+- `frontend/src/locales/es.json`: añadidas claves exercise.edit, exercise.editTitle, exercise.deleteConfirm, exercise.updated.
+- `frontend/src/test/components/ExercisePicker.test.tsx`: ACTUALIZADO — 7 tests (search, names, onSelect, customTag, editButton_showsOnCustom, editButton_hiddenOnGlobal, deleteButton_callsDelete).
+
+**Tests:** npm test (ExercisePicker.test.tsx: 7 tests).
+
+## [2026-06-10] feature:block-editor-improvements | t4-set-group-editable | developer | attempt:1
+
+**Tarea:** Frontend: set groups editables + eliminar set group / entry
+
+**Cambios realizados:**
+- `frontend/src/pages/blocks/BlockEditorPage.tsx`: añadidos handleUpdateSetGroup, handleRemoveSetGroup, handleRemoveEntry; set group rows reemplazados con inputs editables (sets/reps steppers, weightKg input step=0.5, targetRpe opcional); botón × en cada set group y en cada entry header; botón "Guardar día" en top bar del overlay de día que llama setEditingDay(null).
+- `frontend/src/locales/es.json`: añadidas claves editor.sets, editor.reps, editor.weightKg, editor.targetRpe, editor.removeSetGroup, editor.removeEntry, editor.saveDay, editor.duplicateWeek, editor.weekDeltaKg, editor.duplicateWeekHint.
+- `frontend/src/test/blocks/BlockEditorPage.test.tsx`: añadidos tests: shows editable weight input, remove set group button, saveDay button closes overlay.
+
+**Tests:** npm test (BlockEditorPage.test.tsx: 6 tests).
+
+## [2026-06-10] feature:block-editor-improvements | t3-edit-block-load | developer | attempt:1
+
+**Tarea:** Frontend: cargar bloque existente al editar (bug fix)
+
+**Cambios realizados:**
+- `frontend/src/pages/blocks/BlockEditorPage.tsx`: importados useEffect y useQuery; añadido useQuery con queryKey ['block', blockId] enabled cuando isEditing; useEffect llama reset() al recibir datos; pantalla de carga cuando isEditing && isBlockLoading; updateMutation.onSuccess invalida ['block', blockId] y ['blocks'], navega a /blocks/${blockId}.
+- `frontend/src/pages/blocks/BlockDetailPage.tsx`: importado useNavigate; añadido botón "Editar bloque" (t('block.edit')) que navega a /blocks/${blockId}/edit.
+- `frontend/src/test/blocks/BlockEditorPage.test.tsx`: NUEVO — 3 tests: showsLoadingState, populatesFormWithBlockData, rendersNewBlockFormWithoutLoading.
+
+**Tests:** npm test (BlockEditorPage.test.tsx: 3 tests).
+
 ## [2026-06-10] feature:iphone-fit | COMPLETED
 
 **Resumen:** 5 tareas aprobadas en 5 intentos totales (1 por tarea, all first-attempt approvals).

@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { blocksApi } from '../../api/blocks'
 
 export function BlockDetailPage() {
   const { t } = useTranslation()
   const { blockId } = useParams<{ blockId: string }>()
+  const navigate = useNavigate()
 
   const { data: block, isLoading } = useQuery({
     queryKey: ['block', blockId],
@@ -18,7 +19,21 @@ export function BlockDetailPage() {
 
   return (
     <div style={{ padding: 'var(--space-md)' }}>
-      <h2 style={{ color: 'var(--color-text)', marginBottom: 'var(--space-md)' }}>{block.name}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-md)' }}>
+        <h2 style={{ color: 'var(--color-text)' }}>{block.name}</h2>
+        <button
+          type="button"
+          onClick={() => navigate(`/blocks/${blockId}/edit`)}
+          style={{
+            cursor: 'pointer', border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)', background: 'var(--color-surface)',
+            color: 'var(--color-text)', fontFamily: 'var(--font-sans)',
+            fontSize: 'var(--text-sm)', fontWeight: 600, padding: '8px 14px',
+          }}
+        >
+          {t('block.edit')}
+        </button>
+      </div>
       <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
         {block.weeks.map((week) => (
           <li key={week.number}>

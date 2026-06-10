@@ -1,0 +1,233 @@
+id: block-editor-improvements
+title: "Editar bloques, configurar sets, guardar día, ejercicios custom y duplicar semanas"
+created_at: "2026-06-10"
+
+tasks:
+  - id: t1-backend-exercise-put
+    title: "Backend: PUT /api/exercises/{id}"
+    description: >
+      Añadir endpoint PUT /api/exercises/{id} al backend Spring Boot.
+      - En ExerciseService: nuevo método update(userId, exerciseId, request) que:
+        * Busca el ejercicio por id → 404 si no existe.
+        * Si ownerId == null (seed global) → 403 "Cannot update global exercises".
+        * Si ownerId != userId → 403 "Cannot update another user's exercise".
+        * Actualiza name, movementPattern, isBasic y guarda.
+        * Devuelve ExerciseResponse actualizado.
+      - En ExerciseController: @PutMapping("/{id}") que llama update(); valida @Valid CreateExerciseRequest reutilizando ese DTO.
+      - Tests en ExerciseIntegrationTest (nuevos métodos):
+        * updateExercise_ownCustom_returns200: crea ejercicio con userA, actualiza nombre → 200 con nombre nuevo.
+        * updateExercise_globalSeed_returns403.
+        * updateExercise_otherUserExercise_returns403: userB no puede editar el de userA.
+        * updateExercise_notFound_returns404.
+    depends_on: []
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: developer
+
+  - id: t2-frontend-exercise-api
+    title: "Frontend: módulo API de ejercicios + editar/eliminar custom en ExercisePicker"
+    description: >
+      Crear frontend/src/api/exercises.ts con funciones list, create, update, delete
+      usando apiFetch de api/client.ts. Tipos: ExerciseOption (ya existe en ExercisePicker —
+      moverlo o re-exportarlo desde exercises.ts). Endpoints:
+        * list: GET /api/exercises → ExerciseOption[]
+        * create: POST /api/exercises → ExerciseOption
+        * update: PUT /api/exercises/{id} → ExerciseOption
+        * delete: DELETE /api/exercises/{id} → void
+
+      Actualizar ExercisePicker.tsx:
+        - Importar funciones desde api/exercises.ts en lugar de apiFetch directo.
+        - Para ejercicios con isCustom === true, mostrar acciones "editar" y "eliminar"
+          en la fila (iconos o botones pequeños). Los seeds globales NO muestran esas acciones.
+        - Flujo editar: reutilizar el formulario de creación (showCreate) precargado con
+          nombre, patrón e isBasic del ejercicio existente; al guardar llama update() en
+          lugar de create(); invalida ['exercises']; tras actualizar no hace onSelect
+          (el usuario sigue en el picker para poder añadir el ejercicio editado).
+        - Flujo eliminar: window.confirm() o inline confirm state; llama delete();
+          invalida ['exercises'].
+        - Nuevas claves i18n en es.json:
+          * exercise.edit → "Editar"
+          * exercise.editTitle → "Editar ejercicio"
+          * exercise.deleteConfirm → "¿Eliminar este ejercicio? No se puede deshacer."
+          * exercise.updated → "Ejercicio actualizado"
+      - Tests en frontend/src/test/components/ExercisePicker.test.tsx:
+        * editButton_showsOnCustomExercises: para ejercicio isCustom=true aparece botón editar.
+        * editButton_hiddenOnGlobalExercises: para isCustom=false NO aparece botón editar.
+        * deleteButton_callsDeleteAndInvalidates: mock delete(), verifica llamada.
+    depends_on: [t1-backend-exercise-put]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: developer
+
+  - id: t3-edit-block-load
+    title: "Frontend: cargar bloque existente al editar (bug fix)"
+    description: >
+      Corregir BlockEditorPage.tsx para que en modo edición (blockId presente) cargue
+      el bloque y reinicialice el formulario.
+
+      Cambios en BlockEditorPage.tsx:
+        - Añadir useQuery({ queryKey: ['block', blockId], queryFn: () => blocksApi.get(blockId!), enabled: isEditing }).
+        - Al recibir datos (useEffect sobre block data), llamar reset({ name: block.name, weeks: block.weeks }).
+        - Mostrar estado de carga (spinner o texto t('app.loading')) mientras isLoading.
+        - updateMutation.onSuccess debe invalidar también ['block', blockId]:
+            queryClient.invalidateQueries({ queryKey: ['block', blockId] })
+            queryClient.invalidateQueries({ queryKey: ['blocks'] })
+          y navegar a /blocks/${blockId} (la detail page) en lugar de /blocks.
+
+      Añadir botón "Editar" en BlockDetailPage.tsx:
+        - Un botón/link que navega a /blocks/${blockId}/edit.
+        - Clave i18n ya existe: 'block.edit' → "Editar bloque".
+        - Colocarlo junto al título del bloque (top bar o bajo el nombre).
+
+      Tests en frontend/src/test/blocks/BlockEditorPage.test.tsx (nuevo archivo):
+        * loadExistingBlock_populatesForm: mockea blocksApi.get, verifica que el input name
+          recibe el valor del bloque cargado.
+        * editMode_showsLoadingState: isLoading=true → muestra texto de carga.
+    depends_on: []
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: developer
+
+  - id: t4-set-group-editable
+    title: "Frontend: set groups editables + eliminar set group / entry"
+    description: >
+      Modificar el overlay de edición de día en BlockEditorPage.tsx para que los
+      set groups sean editables y se puedan eliminar, y también se puedan eliminar
+      exercise entries.
+
+      Dentro de la sección editingDay !== null:
+
+      1. Cada SetGroup row pasa de solo lectura a editable:
+         - Reemplazar el <span> de texto por inputs/steppers:
+           * sets: stepper (entero ≥ 1). Reutilizar el estilo de steppers ya existente en
+             el proyecto (el que hay en SessionPage es inline CSS, replicar ese patrón).
+           * reps: stepper (entero ≥ 1).
+           * weightKg: input type="number" step="0.5" min="0" (permite 142.5); ancho fijo
+             ~80px para no desbordar en 375px.
+           * targetRpe: input type="number" step="1" min="1" max="10" opcional → null si vacío.
+         - Cada cambio llama setValue con la ruta correcta:
+           setValue(`weeks.${w}.days.${d}.entries.${e}.setGroups.${sg_idx}.sets`, newVal)
+           (similar para reps, weightKg, targetRpe).
+         - Botón "×" (eliminar set group) que filtra el array y llama setValue en
+           weeks.${w}.days.${d}.entries.${e}.setGroups.
+         - La fila no debe desbordar horizontalmente en 375px; usar flex wrap o grid
+           con columnas fijas pequeñas.
+
+      2. Eliminar exercise entry:
+         - En la cabecera del entry card, añadir botón "×" que filtra entries y llama
+           setValue en weeks.${w}.days.${d}.entries.
+
+      3. Nuevas claves i18n en es.json:
+         * editor.sets → "Series"
+         * editor.reps → "Reps"
+         * editor.weightKg → "Peso"
+         * editor.targetRpe → "RPE"
+         * editor.removeSetGroup → "Eliminar serie"
+         * editor.removeEntry → "Eliminar ejercicio"
+
+      Tests en frontend/src/test/blocks/BlockEditorPage.test.tsx (añadir a fichero del t3):
+        * setGroupInputs_renderedWhenEditingDay: verifica que al entrar en modo día
+          se renderiza al menos un input de weightKg cuando hay setGroups.
+        * removeSetGroup_callsSetValue: mock setValue, pulsar "×" en set group.
+    depends_on: [t3-edit-block-load]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: developer
+
+  - id: t5-save-day-button
+    title: "Frontend: botón 'Guardar día' en overlay de edición de día"
+    description: >
+      Añadir botón "Guardar día" en la top bar del overlay de día (editingDay !== null)
+      en BlockEditorPage.tsx.
+
+      - Colocarlo en la top bar del overlay, junto al botón "← Semana N".
+        Sugerencia: en el extremo derecho (donde hoy hay solo el label de semana).
+      - Al pulsar: setEditingDay(null) — solo cierra el overlay conservando los cambios
+        en memoria (estado react-hook-form). NO hace ninguna llamada al backend.
+      - El botón "← Semana N" existente conserva su comportamiento actual (también
+        hace setEditingDay(null)).
+      - Nueva clave i18n: editor.saveDay → "Guardar día".
+      - El botón Guardar a nivel de bloque es el único que persiste en el backend.
+
+      Tests en frontend/src/test/blocks/BlockEditorPage.test.tsx (añadir):
+        * saveDayButton_closesOverlay: renderizar con un día en edición, pulsar
+          "Guardar día", verificar que el overlay se cierra (el contenido del día
+          desaparece, vuelve la vista de semanas).
+    depends_on: [t4-set-group-editable]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: developer
+
+  - id: t6-duplicate-week
+    title: "Frontend: duplicar semana con ajuste de pesos (kg absolutos)"
+    description: >
+      Añadir funcionalidad "Duplicar semana" en BlockEditorPage.tsx como operación
+      client-side sobre el estado del formulario.
+
+      1. En la cabecera de cada semana del editor (junto al label "SEMANA N"), añadir
+         un botón/icono "Duplicar semana" que abre un BottomSheet (reutilizar BottomSheet.tsx).
+
+      2. El BottomSheet "Duplicar semana":
+         - Título: t('editor.duplicateWeek') → "Duplicar semana".
+         - Input numérico para delta en kg (puede ser negativo, p.ej. -2.5). Placeholder "0".
+           Label: t('editor.weekDeltaKg') → "Ajuste de peso (kg)".
+         - Botón confirmar: t('app.confirm') → "Confirmar".
+         - Al confirmar:
+           a. Copia profunda de la semana origen (todos los días, entries y setGroups).
+           b. Genera nuevos UUID para cada setGroup de la copia (crypto.randomUUID()).
+           c. Suma delta a weightKg de todos los setGroups con type === 'WORKING'.
+              Los WARMUP quedan sin cambios. Clamp: weightKg no puede ser < 0 (Math.max(0, ...)).
+           d. Inserta la nueva semana después de la semana origen, renumerando todas las
+              semanas: weeks[i].number = i + 1 para todas.
+           e. Llama replaceWeeks() de useFieldArray para actualizar react-hook-form.
+           f. Cierra el BottomSheet.
+         - Cero delta es válido (copia idéntica excepto nuevos UUIDs).
+
+      3. Nuevas claves i18n en es.json:
+         * editor.duplicateWeek → "Duplicar semana"
+         * editor.weekDeltaKg → "Ajuste de peso (kg)"
+         * editor.duplicateWeekHint → "Se suma a los sets efectivos (WORKING). Los de calentamiento no cambian."
+
+      4. Tests en frontend/src/test/blocks/BlockEditorPage.test.tsx (añadir):
+         * duplicateWeek_addsWeekToForm: simular bloque con 1 semana, abrir sheet,
+           confirmar con delta=2.5 → ahora hay 2 semanas en el formulario.
+         * duplicateWeek_appliesDeltaToWorkingSets: delta=5, set WORKING weightKg=100 →
+           copia tiene weightKg=105; set WARMUP weightKg=40 → copia tiene 40.
+         * duplicateWeek_newUuidsOnSetGroups: los setGroup.id de la copia son distintos
+           de los originales.
+    depends_on: [t5-save-day-button]
+    status: approved
+    attempts: 1
+    max_attempts: 3
+    assigned_to: developer
+
+review:
+  t1-backend-exercise-put:
+    status: approved
+    attempt: 1
+    issues: []
+  t3-edit-block-load:
+    status: approved
+    attempt: 1
+    issues: []
+  t2-frontend-exercise-api:
+    status: approved
+    attempt: 1
+    issues: []
+  t4-set-group-editable:
+    status: approved
+    attempt: 1
+    issues: []
+  t5-save-day-button:
+    status: approved
+    attempt: 1
+    issues: []
+  t6-duplicate-week:
+    status: approved
+    attempt: 1
+    issues: []

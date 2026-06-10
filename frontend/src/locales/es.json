@@ -162,9 +162,19 @@
     "addWorkingSet": "Serie efectiva",
     "noExercises": "Sin ejercicios. Añade el primero abajo.",
     "save": "Guardar",
+    "saveDay": "Guardar día",
     "done": "Hecho",
     "typeWarmup": "Calentamiento",
-    "typeWorking": "Efectiva"
+    "typeWorking": "Efectiva",
+    "sets": "Series",
+    "reps": "Reps",
+    "weightKg": "Peso",
+    "targetRpe": "RPE",
+    "removeSetGroup": "Eliminar serie",
+    "removeEntry": "Eliminar ejercicio",
+    "duplicateWeek": "Duplicar semana",
+    "weekDeltaKg": "Ajuste de peso (kg)",
+    "duplicateWeekHint": "Se suma a los sets efectivos (WORKING). Los de calentamiento no cambian."
   },
   "duplicate": {
     "title": "Duplicar bloque",
